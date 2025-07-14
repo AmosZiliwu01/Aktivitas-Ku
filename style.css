@@ -61,6 +61,18 @@
             border-radius: 10px;
         }
         
+        .halaman-utama {
+            background: linear-gradient(45deg, #34d399, #3b82f6);
+            box-shadow: 0 4px 15px rgba(52, 211, 153, 0.4);
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .halaman-utama:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 211, 153, 0.6);
+        }
+        
         .glow-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
@@ -286,6 +298,7 @@
             gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
+            justify-content: center;
         }
         
         .filter-tab {
@@ -294,7 +307,7 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
