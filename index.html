@@ -11,20 +11,20 @@
     <!-- Name Input Modal -->
     <div id="nameModal" class="modal show">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎓 Selamat Datang di JejakBelajar!</h2>
-            <p class="text-gray-600 mb-6">Silakan masukkan nama Anda untuk memulai perjalanan pembelajaran</p>
-            <input type="text" id="nameInput" class="input-field mb-4" placeholder="Masukkan nama Anda..." onkeypress="handleNameKeyPress(event)">
-            <button class="btn-primary w-full" onclick="saveName()">Mulai Belajar</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🎓 Selamat Datang di Jejak & Aktivitas Belajar!</h2>
+            <p class="text-gray-600 mb-6">Masukkan nama Anda untuk memulai perjalanan belajar yang lebih terarah dan menyenangkan.</p>
+            <input type="text" id="nameInput" class="input-field mb-4" placeholder="Nama lengkap Anda..." onkeypress="handleNameKeyPress(event)">
+            <button class="btn-primary w-full" onclick="saveName()">Mulai</button>
         </div>
     </div>
 
     <!-- Add Subject Modal -->
     <div id="subjectModal" class="modal">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">📚 Tambah Mata Pelajaran Baru</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📚 Tambah Aktivitas Belajar Baru</h2>
             <div class="space-y-4">
-                <input type="text" id="subjectName" class="input-field" placeholder="Nama mata pelajaran...">
-                <textarea id="subjectDescription" class="input-field" rows="3" placeholder="Deskripsi mata pelajaran..."></textarea>
+                <input type="text" id="subjectName" class="input-field" placeholder="Nama aktivitas belajar...">
+                <textarea id="subjectDescription" class="input-field" rows="3" placeholder="Deskripsi aktivitas belajar..."></textarea>
                 <select id="subjectDifficulty" class="input-field">
                     <option value="beginner">Pemula</option>
                     <option value="intermediate">Menengah</option>
@@ -127,7 +127,7 @@
                                 <button class="btn-primary" onclick="deleteSelectedSubjects()" style="background: linear-gradient(45deg, #ff0000, #ff4444);">Hapus Terpilih</button>
                                 <button class="btn-primary" onclick="resetSelectedSubjects()" style="background: linear-gradient(45deg, #f59e42, #fbbf24);">Reset Terpilih</button>
                             </div>
-                            <button class="btn-primary" onclick="openSubjectModal()">+ Tambah Mata Pelajaran</button>
+                            <button class="btn-primary" onclick="openSubjectModal()">+ Tambah Aktivitas Belajar</button>
                         </div>
                         <div class="space-y-4" id="todaySchedule">
                             <!-- Schedule items will be populated here -->
@@ -254,7 +254,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Prioritas Mata Pelajaran</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Prioritas Aktivitas Belajar</label>
                                 <select class="input-field" id="prioritySubject">
                                     <!-- Will be populated dynamically -->
                                 </select>

@@ -1424,14 +1424,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function showProfile() {
             Swal.fire({
-                title: `Profil: ${currentUser}`,
-                html: `<div style='text-align:left'>
-                    <b>Waktu Belajar Total:</b> ${Math.round(studyData.studyTime / 60)} jam<br>
-                    <b>Mata Pelajaran Selesai:</b> ${studyData.subjects.filter(s => s.completed).length}<br>
-                    <b>Streak:</b> ${studyData.streak} hari
-                </div>`,
-                icon: 'info',
-                confirmButtonText: 'Tutup'
+                html: `
+                    <div style="text-align:center">
+                        <div style="margin-bottom:16px;">
+                            <span style="display:inline-block;width:72px;height:72px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:auto;">
+                                <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="url(#userGradient)"/><defs><linearGradient id="userGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient></defs><path fill="#fff" d="M12 12c1.933 0 3.5-1.567 3.5-3.5S13.933 5 12 5s-3.5 1.567-3.5 3.5S10.067 12 12 12Zm0 1.5c-2.485 0-7.5 1.243-7.5 3.75V19h15v-1.75c0-2.507-5.015-3.75-7.5-3.75Z"/></svg>
+                            </span>
+                        </div>
+                        <div style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#333;">${currentUser}</div>
+                        <div style="margin-bottom:18px;">
+                            <b>Waktu Belajar Total:</b> ${Math.round(studyData.studyTime / 60)} jam<br>
+                            <b>Mata Pelajaran Selesai:</b> ${studyData.subjects.filter(s => s.completed).length}<br>
+                            <b>Streak:</b> ${studyData.streak} hari
+                        </div>
+                        <button id='logoutBtn' style='margin-top:10px;width:100%;padding:12px 0;font-weight:700;font-size:1rem;border:none;border-radius:12px;background:linear-gradient(90deg,#667eea,#764ba2);color:white;box-shadow:0 2px 8px rgba(102,126,234,0.15);transition:background 0.3s;'>Logout / Hapus Data</button>
+                    </div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: 'Tutup',
+                didOpen: () => {
+                    document.getElementById('logoutBtn').onclick = function() {
+                        Swal.fire({
+                            title: 'Yakin ingin logout dan hapus semua data?',
+                            text: 'Semua data belajar dan kegiatan Anda akan dihapus dan aplikasi akan direset!',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Ya, Hapus!',
+                            cancelButtonText: 'Batal'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Hapus data dari localStorage
+                                if (currentUser) {
+                                    localStorage.removeItem('eduMentorUser');
+                                    localStorage.removeItem(`eduMentorData_${currentUser}`);
+                                }
+                                // Hapus juga data kegiatan InternTrack
+                                localStorage.removeItem('interntrack_logs');
+                                // Reset variabel global
+                                currentUser = null;
+                                studyData = { subjects: [], studyTime: 0, streak: 0, goals: [] };
+                                // Reload halaman
+                                location.reload();
+                            }
+                        });
+                    };
+                }
             });
         }
 
