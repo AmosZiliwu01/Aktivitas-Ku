@@ -1167,15 +1167,26 @@
         function resetTimer() {
             clearInterval(timerInterval);
             isTimerRunning = false;
-            timerMinutes = timerMinutes; // Keep the duration set by the subject
+            timerMinutes = 25; // Reset ke default 25 menit
             timerSeconds = 0;
             document.getElementById('timerDisplay').textContent = `${timerMinutes.toString().padStart(2, '0')}:00`;
             document.getElementById('timerBtn').textContent = 'Mulai';
             document.getElementById('timerSelect').disabled = false;
-            // Reset runningTimerElapsed untuk subject yang aktif
-            if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
-                studyData.subjects[window.lastContinuedSubjectIndex].runningTimerElapsed = 0;
-            }
+            // Reset semua aktivitas subject
+            studyData.subjects.forEach(subject => {
+                subject.totalTime = 0;
+                subject.runningTimerElapsed = 0;
+                subject.progress = 0;
+                subject.completed = false;
+            });
+            // Kosongkan selectedSubjectIndexes
+            window.selectedSubjectIndexes = [];
+            // Reset label subject aktif
+            window.lastContinuedSubjectName = null;
+            window.lastContinuedSubjectIndex = null;
+            saveUserData();
+            updateDashboard();
+            updateActiveSubjectName();
         }
 
         function changeTimerDuration() {
