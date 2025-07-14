@@ -798,52 +798,6 @@
             updateDashboard();
             generateCalendar();
             loadAIRecommendations();
-            initializeDefaultSubjects();
-        }
-
-        // 1. Add lastMilestone to each subject (for new and default subjects)
-        function initializeDefaultSubjects() {
-            if (studyData.subjects.length === 0) {
-                studyData.subjects = [
-                    {
-                        name: 'Matematika',
-                        description: 'Konsep dasar matematika',
-                        difficulty: 'intermediate',
-                        progress: 65,
-                        totalTime: 120,
-                        completed: false,
-                        studyTime: 25,
-                        targetTime: 120,
-                        lastMilestone: 0,
-                        runningTimerElapsed: 0
-                    },
-                    {
-                        name: 'Pemrograman',
-                        description: 'Belajar dasar pemrograman',
-                        difficulty: 'beginner',
-                        progress: 30,
-                        totalTime: 80,
-                        completed: false,
-                        studyTime: 25,
-                        targetTime: 80,
-                        lastMilestone: 0,
-                        runningTimerElapsed: 0
-                    },
-                    {
-                        name: 'Ilmu Data',
-                        description: 'Pengenalan ilmu data',
-                        difficulty: 'advanced',
-                        progress: 15,
-                        totalTime: 40,
-                        completed: false,
-                        studyTime: 25,
-                        targetTime: 40,
-                        lastMilestone: 0,
-                        runningTimerElapsed: 0
-                    }
-                ];
-                saveUserData();
-            }
         }
 
         // Tab switching
