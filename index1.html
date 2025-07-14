@@ -1059,18 +1059,9 @@
         function startTimer() {
             if (!isTimerRunning) {
                 isTimerRunning = true;
-                document.getElementById('timerBtn').textContent = 'Paus';
+                document.getElementById('timerBtn').style.display = 'none'; // Sembunyikan tombol Mulai setelah diklik
                 timerInterval = setInterval(updateTimer, 1000);
                 document.getElementById('timerSelect').disabled = true;
-                // Reset runningTimerElapsed untuk subject yang aktif
-                if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
-                    studyData.subjects[window.lastContinuedSubjectIndex].runningTimerElapsed = 0;
-                }
-            } else {
-                isTimerRunning = false;
-                document.getElementById('timerBtn').textContent = 'Lanjutkan';
-                clearInterval(timerInterval);
-                document.getElementById('timerSelect').disabled = false;
             }
         }
 
@@ -1141,7 +1132,7 @@
                 if (subject.completed) {
                     isTimerRunning = false;
                     clearInterval(timerInterval);
-                    document.getElementById('timerBtn').textContent = 'Mulai';
+                    document.getElementById('timerBtn').style.display = 'block'; // Tampilkan tombol Mulai kembali
                     document.getElementById('timerSelect').disabled = false;
                 }
                 // Update progress bar and % in DOM - hanya untuk subject yang aktif
@@ -1170,23 +1161,39 @@
             timerMinutes = 25; // Reset ke default 25 menit
             timerSeconds = 0;
             document.getElementById('timerDisplay').textContent = `${timerMinutes.toString().padStart(2, '0')}:00`;
-            document.getElementById('timerBtn').textContent = 'Mulai';
+            document.getElementById('timerBtn').style.display = 'block'; // Tampilkan tombol Mulai kembali
             document.getElementById('timerSelect').disabled = false;
-            // Reset semua aktivitas subject
-            studyData.subjects.forEach(subject => {
-                subject.totalTime = 0;
-                subject.runningTimerElapsed = 0;
-                subject.progress = 0;
-                subject.completed = false;
-            });
-            // Kosongkan selectedSubjectIndexes
-            window.selectedSubjectIndexes = [];
+            // Reset hanya subject yang sedang aktif
+            if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+                const subject = studyData.subjects[window.lastContinuedSubjectIndex];
+                let targetTime = parseFloat(subject.targetTime);
+                if (!targetTime || isNaN(targetTime)) targetTime = 25;
+                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
+                let progressRaw = (totalTime / targetTime) * 100;
+                let milestone = 0;
+                if (progressRaw >= 75) milestone = 75;
+                else if (progressRaw >= 50) milestone = 50;
+                else if (progressRaw >= 25) milestone = 25;
+                // Jika progress < 25%, reset ke 0
+                if (milestone === 0) {
+                    subject.totalTime = 0;
+                    subject.runningTimerElapsed = 0;
+                    subject.progress = 0;
+                    subject.completed = false;
+                } else {
+                    // Set totalTime sesuai milestone
+                    subject.totalTime = (milestone / 100) * targetTime;
+                    subject.runningTimerElapsed = 0;
+                    subject.progress = milestone;
+                    subject.completed = (milestone === 100);
+                }
+            }
             // Reset label subject aktif
             window.lastContinuedSubjectName = null;
             window.lastContinuedSubjectIndex = null;
+            updateActiveSubjectName();
             saveUserData();
             updateDashboard();
-            updateActiveSubjectName();
         }
 
         function changeTimerDuration() {
@@ -1643,7 +1650,7 @@
                     timerSeconds = 0;
                     document.getElementById('timerDisplay').textContent = `${timerMinutes.toString().padStart(2, '0')}:00`;
                     document.getElementById('timerSelect').disabled = false;
-                    document.getElementById('timerBtn').textContent = 'Mulai';
+                    document.getElementById('timerBtn').style.display = 'block'; // Tampilkan tombol Mulai kembali
                     isTimerRunning = false;
                     clearInterval(timerInterval);
                     // Reset label subject aktif
