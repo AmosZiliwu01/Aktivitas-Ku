@@ -718,8 +718,6 @@
         let isTimerRunning = false;
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
-        // Tambahkan variabel global untuk waktu berjalan
-        let runningTimerElapsed = 0;
         // Tambahkan audio bell
         const bellAudio = new Audio('bell100%.mp3');
 
@@ -1064,7 +1062,10 @@
                 document.getElementById('timerBtn').textContent = 'Paus';
                 timerInterval = setInterval(updateTimer, 1000);
                 document.getElementById('timerSelect').disabled = true;
-                runningTimerElapsed = 0;
+                // Reset runningTimerElapsed untuk subject yang aktif
+                if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+                    studyData.subjects[window.lastContinuedSubjectIndex].runningTimerElapsed = 0;
+                }
             } else {
                 isTimerRunning = false;
                 document.getElementById('timerBtn').textContent = 'Lanjutkan';
@@ -1100,12 +1101,17 @@
             // Milestone progress logic
             if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
                 const subject = studyData.subjects[window.lastContinuedSubjectIndex];
-                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
                 let targetTime = parseFloat(subject.targetTime);
                 if (!targetTime || isNaN(targetTime)) targetTime = 25;
-                let durasiAwal = parseInt(document.getElementById('timerSelect').value) || 25;
-                runningTimerElapsed += 1/60; // 1 detik = 1/60 menit
-                let progressRaw = ((totalTime + runningTimerElapsed) / targetTime) * 100;
+                
+                // Update running timer elapsed
+                subject.runningTimerElapsed = (subject.runningTimerElapsed || 0) + 1/60; // 1 detik = 1/60 menit
+                
+                // Calculate total time: saved time + current running time
+                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
+                
+                // Calculate progress based on target time
+                let progressRaw = (totalTime / targetTime) * 100;
                 let progress = Math.floor(progressRaw);
                 if (progress > 100) progress = 100;
                 if (progress < 0 || isNaN(progress)) progress = 0;
@@ -1138,11 +1144,11 @@
                     document.getElementById('timerBtn').textContent = 'Mulai';
                     document.getElementById('timerSelect').disabled = false;
                 }
-                // Update progress bar and % in DOM
+                // Update progress bar and % in DOM - hanya untuk subject yang aktif
                 const scheduleContainer = document.getElementById('todaySchedule');
-                if (scheduleContainer) {
-                    const cards = scheduleContainer.querySelectorAll('.learning-path-item');
-                    const card = cards[window.lastContinuedSubjectIndex];
+                if (scheduleContainer && window.lastContinuedSubjectName) {
+                    // Cari card berdasarkan nama subject, bukan index
+                    const card = scheduleContainer.querySelector(`.learning-path-item[data-subject-name="${window.lastContinuedSubjectName}"]`);
                     if (card) {
                         const percentEl = card.querySelector('.text-2xl.font-bold.text-purple-600');
                         if (percentEl) percentEl.textContent = progress + '%';
@@ -1150,9 +1156,6 @@
                         if (barEl) barEl.style.width = progress + '%';
                         if (progress === 100) card.classList.add('completed');
                         else card.classList.remove('completed');
-                        // Update teks waktu belajar real-time
-                        const timeEl = document.getElementById(`subject-time-${window.lastContinuedSubjectIndex}`);
-                        if (timeEl) timeEl.textContent = `${Math.floor(totalTime + runningTimerElapsed)} menit belajar`;
                     }
                 }
                 // Simpan waktu berjalan ke localStorage setiap detik
@@ -1169,7 +1172,10 @@
             document.getElementById('timerDisplay').textContent = `${timerMinutes.toString().padStart(2, '0')}:00`;
             document.getElementById('timerBtn').textContent = 'Mulai';
             document.getElementById('timerSelect').disabled = false;
-            runningTimerElapsed = 0;
+            // Reset runningTimerElapsed untuk subject yang aktif
+            if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+                studyData.subjects[window.lastContinuedSubjectIndex].runningTimerElapsed = 0;
+            }
         }
 
         function changeTimerDuration() {
@@ -1746,14 +1752,14 @@
         setInterval(saveUserData, 30000);
 
         function updateActiveSubjectProgress(subjectName, progress) {
-            const scheduleContainer = document.getElementById('todaySchedule');
-            if (!scheduleContainer) return;
-            const card = scheduleContainer.querySelector(`.learning-path-item[data-subject-name="${subjectName.replace(/"/g, '\"')}"]`);
-            if (card) {
-                const percentEl = card.querySelector('.text-2xl.font-bold.text-purple-600');
-                if (percentEl) percentEl.textContent = progress + '%';
-                const barEl = card.querySelector('.h-full.bg-purple-600.rounded-full');
-                if (barEl) barEl.style.width = progress + '%';
+            // Fungsi ini sudah tidak diperlukan karena updateTimer sudah menangani update progress
+            // Hanya simpan data ke localStorage
+            if (window.lastContinuedSubjectName === subjectName) {
+                const subjectIndex = studyData.subjects.findIndex(s => s.name === subjectName);
+                if (subjectIndex !== -1) {
+                    studyData.subjects[subjectIndex].progress = progress;
+                    studyData.subjects[subjectIndex].completed = (progress === 100);
+                }
             }
         }
     </script>
