@@ -60,29 +60,7 @@ body {
 }
 
 /* ===== ANIMATIONS ===== */
-.slide-in {
-    animation: slideIn 0.5s ease-out;
-}
-
-@keyframes slideIn {
-    from { 
-        opacity: 0; 
-        transform: translateY(30px);
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0);
-    }
-}
-
-.fade-in {
-    animation: fadeIn 1s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+/* Removed slide-in and fade-in animations for consistency with kegiatan.html */
 
 .pulse-animation {
     animation: pulse 2s infinite;
@@ -131,8 +109,15 @@ body {
     background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
     box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
     transition: all 0.3s ease;
-    border-radius: 10px;
-    margin-left: 10px !important;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .glow-button:hover {
@@ -144,7 +129,12 @@ body {
     background: linear-gradient(45deg, #34d399, #3b82f6);
     box-shadow: 0 4px 15px rgba(52, 211, 153, 0.4);
     transition: all 0.3s ease;
-    border-radius: 10px;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .halaman-utama:hover {
@@ -155,6 +145,15 @@ body {
 .delete-btn {
     background: linear-gradient(45deg, #ff4757, #ff6b7a);
     transition: all 0.3s ease;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .delete-btn:hover {
@@ -165,6 +164,14 @@ body {
 .complete-btn {
     background: linear-gradient(45deg, #2ecc71, #27ae60);
     transition: all 0.3s ease;
+    padding: 8px;
+    border-radius: 50%;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .complete-btn:hover {
@@ -175,6 +182,14 @@ body {
 .edit-btn {
     background: linear-gradient(45deg, #f39c12, #e67e22);
     transition: all 0.3s ease;
+    padding: 8px;
+    border-radius: 50%;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .edit-btn:hover {
@@ -321,7 +336,6 @@ body {
 
 .tab-content {
     display: none;
-    animation: fadeIn 0.5s ease-in;
 }
 
 .tab-content.active {
@@ -511,7 +525,6 @@ body {
     margin: 16px 0;
     padding: 16px;
     border-radius: 16px;
-    animation: slideIn 0.3s ease-out;
 }
 
 .ai-message {
@@ -664,6 +677,12 @@ body {
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
 }
 
 /* Modal content variant for index.html */
@@ -798,6 +817,7 @@ body {
     .glass-morphism .btn-primary,
     .glass-morphism .halaman-utama,
     .glass-morphism .glow-button,
+    .floating-header .btn-primary,
     .floating-header .halaman-utama,
     .floating-header .glow-button {
         padding: 8px 12px !important;
@@ -810,7 +830,7 @@ body {
         box-sizing: border-box;
     }
     .glass-morphism .w-12,
-    .floating-header-logo {
+    .floating-header .w-12 {
         width: 36px !important;
         height: 36px !important;
     }

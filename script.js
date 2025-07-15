@@ -11,7 +11,6 @@ class EnhancedInternTrack {
     initializeEventListeners() {
         const logForm = document.getElementById('logForm');
         const editForm = document.getElementById('editForm');
-        const toggleFormBtn = document.getElementById('toggleFormBtn');
         const typeSelect = document.getElementById('type');
         const projectField = document.getElementById('projectField');
         const filterTabs = document.querySelectorAll('.filter-tab');
@@ -25,10 +24,6 @@ class EnhancedInternTrack {
         editForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveEdit();
-        });
-
-        toggleFormBtn.addEventListener('click', () => {
-            this.toggleForm();
         });
 
         typeSelect.addEventListener('change', (e) => {
@@ -74,22 +69,6 @@ class EnhancedInternTrack {
         this.render();
     }
 
-    toggleForm() {
-        const formContainer = document.getElementById('formContainer');
-        const toggleText = document.getElementById('toggleFormText');
-        this.formVisible = !this.formVisible;
-        if (this.formVisible) {
-            formContainer.classList.add('active');
-            toggleText.textContent = '✕ Tutup Form';
-            setTimeout(() => {
-                document.getElementById('date').focus();
-            }, 300);
-        } else {
-            formContainer.classList.remove('active');
-            toggleText.textContent = '+ Tambah Kegiatan';
-        }
-    }
-
     addLog() {
         const date = document.getElementById('date').value;
         const type = document.getElementById('type').value;
@@ -120,7 +99,7 @@ class EnhancedInternTrack {
             this.render(); // Memastikan render langsung
             this.clearForm();
             this.showSuccessToast('Kegiatan berhasil ditambahkan!');
-            this.toggleForm();
+            this.closeAddActivityModal();
         }
     }
 
@@ -467,14 +446,67 @@ class EnhancedInternTrack {
         const checked = document.querySelectorAll('.log-checkbox:checked').length;
         btn.style.display = checked > 0 ? '' : 'none';
     }
+
+    // Modal functions for Add Activity
+    openAddActivityModal() {
+        const modal = document.getElementById('addActivityModal');
+        modal.classList.add('active');
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+        // Focus on first input
+        setTimeout(() => {
+            document.getElementById('date').focus();
+        }, 300);
+    }
+
+    closeAddActivityModal() {
+        const modal = document.getElementById('addActivityModal');
+        modal.classList.remove('active');
+        this.clearForm();
+    }
 }
 
-function closeEditModal() {
-    document.getElementById('editModal').classList.remove('active');
+// Global functions for modal
+function openAddActivityModal() {
+    if (window.app) {
+        window.app.openAddActivityModal();
+    }
+}
+
+function closeAddActivityModal() {
+    if (window.app) {
+        window.app.closeAddActivityModal();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new EnhancedInternTrack();
+    
+    // Close modal when clicking outside
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                if (modal.id === 'addActivityModal') {
+                    window.app.clearForm();
+                }
+            }
+        });
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const activeModal = document.querySelector('.modal.active');
+            if (activeModal) {
+                activeModal.classList.remove('active');
+                if (activeModal.id === 'addActivityModal') {
+                    window.app.clearForm();
+                }
+            }
+        }
+    });
 });
 
 //index.html
@@ -615,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Cek nama subject sudah ada (case-insensitive)
             const nameExists = studyData.subjects.some(s => s.name.trim().toLowerCase() === name.toLowerCase());
             if (nameExists) {
-                Swal.fire('Gagal', 'Nama mata pelajaran sudah ada, gunakan nama lain!', 'error');
+                Swal.fire('Gagal', 'Nama aktivitas belajar sudah ada, gunakan nama lain!', 'error');
                 return;
             }
             if (name && description && time > 0) {
@@ -638,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset to first page when adding new subject
                 window.currentSchedulePage = 1;
                 updateDashboard();
-                showNotification(`Mata pelajaran "${name}" berhasil ditambahkan! 📚`);
+                showNotification(`Aktivitas belajar "${name}" berhasil ditambahkan! 📚`);
             } else {
                 showNotification('Silakan lengkapi semua field', 'error');
             }
@@ -671,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (studyData.subjects.length === 0) {
                 scheduleContainer.innerHTML = `
                     <div class="text-center py-8">
-                        <p class="text-gray-500">Belum ada mata pelajaran. Klik "Tambah Mata Pelajaran" untuk menambahkan.</p>
+                        <p class="text-gray-500">Belum ada aktivitas belajar. Klik "Tambah Aktivitas belajar" untuk menambahkan.</p>
                     </div>
                 `;
                 // Sembunyikan tombol aksi jika tidak ada subject
@@ -1317,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Waktu Belajar Total', value: `${Math.round(totalTime / 60)}h ${totalTime % 60}m`, color: 'blue' },
                 { label: 'Rata-rata Sesi', value: `${averageSession}m`, color: 'green' },
                 { label: 'Streak Belajar', value: `${studyData.streak} hari`, color: 'purple' },
-                { label: 'Mata Pelajaran Selesai', value: studyData.subjects.filter(s => s.completed).length, color: 'orange' }
+                { label: 'Aktivitas Belajar Selesai', value: studyData.subjects.filter(s => s.completed).length, color: 'orange' }
             ];
             
             analytics.forEach(item => {
@@ -1375,7 +1407,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recommendationsContainer.innerHTML = '<div class="loading-spinner"></div> Memuat rekomendasi...';
             
             try {
-                const userContext = `Pengguna: ${currentUser}, Mata Pelajaran: ${studyData.subjects.map(s => s.name).join(', ')}, 
+                const userContext = `Pengguna: ${currentUser}, Aktivitas Belajar: ${studyData.subjects.map(s => s.name).join(', ')}, 
                                    Waktu Belajar: ${studyData.studyTime}menit, Progres: ${studyData.subjects.map(s => s.progress).join(', ')}%`;
                 
                 const response = await callGeminiAPI(`Berikan 3 rekomendasi belajar pendek berdasarkan: ${userContext}`);
@@ -1393,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 recommendationsContainer.innerHTML = `
                     <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                        <p class="text-blue-800 text-sm">📚 Ulas kembali mata pelajaran yang lemah Anda</p>
+                        <p class="text-blue-800 text-sm">📚 Ulas kembali aktivitas belajar yang lemah Anda</p>
                     </div>
                     <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
                         <p class="text-green-800 text-sm">⏰ Ambil break teratur setiap 25 menit</p>
@@ -1402,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-purple-800 text-sm">🎯 Tetapkan tujuan belajar harian spesifik</p>
                     </div>
                     <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                        <p class="text-orange-800 text-sm">✅ Centang mata pelajaran yang ingin dihapus dan direset</p>
+                        <p class="text-orange-800 text-sm">✅ Centang aktivitas belajar yang ingin dihapus dan direset</p>
                     </div>
                 `;
             }
@@ -1423,19 +1455,93 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function showProfile() {
+            // Ambil data belajar
+            const savedUser = localStorage.getItem('eduMentorUser') || 'Pengguna';
+            const savedData = localStorage.getItem(`eduMentorData_${savedUser}`);
+            let studyData = { subjects: [], studyTime: 0, streak: 0, goals: [] };
+            if (savedData) {
+                studyData = JSON.parse(savedData);
+            }
+            // Ambil data aktivitas
+            const logs = JSON.parse(localStorage.getItem('interntrack_logs')) || [];
+            // Hitung metrik
+            const totalTopics = studyData.subjects.length;
+            const completedCourses = studyData.subjects.filter(s => s.completed).length;
+            const totalActivities = logs.length;
+            const completedActivities = logs.filter(log => log.status === 'completed').length;
+
             Swal.fire({
                 html: `
+                    <style>
+                        .profile-metrics-grid {
+                            display: grid;
+                            grid-template-columns: repeat(2, 1fr);
+                            gap: 18px;
+                            margin-bottom: 18px;
+                            text-align: center;
+                        }
+                        @media (max-width: 600px) {
+                            .profile-metrics-grid {
+                                grid-template-columns: 1fr;
+                            }
+                        }
+                        .profile-metric-card {
+                            background: #f7f8fa;
+                            border-radius: 16px;
+                            padding: 18px 8px 14px 8px;
+                            box-shadow: 0 2px 8px rgba(102,126,234,0.06);
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            min-width: 0;
+                        }
+                        .profile-metric-card .icon {
+                            font-size: 2.1rem;
+                            margin-bottom: 6px;
+                        }
+                        .profile-metric-card .value {
+                            font-size: 1.7rem;
+                            font-weight: 700;
+                            margin-bottom: 2px;
+                        }
+                        .profile-metric-card .desc {
+                            font-size: 1rem;
+                            font-weight: 500;
+                            color: #444;
+                        }
+                        .profile-metric-card.topik { color: #6366f1; background: #eef2ff; }
+                        .profile-metric-card.kursus { color: #22c55e; background: #e7f9ef; }
+                        .profile-metric-card.kegiatan { color: #ff6b6b; background: #fff1f1; }
+                        .profile-metric-card.selesai { color: #10b981; background: #e7f9ef; }
+                    </style>
                     <div style="text-align:center">
                         <div style="margin-bottom:16px;">
                             <span style="display:inline-block;width:72px;height:72px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:auto;">
                                 <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="url(#userGradient)"/><defs><linearGradient id="userGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient></defs><path fill="#fff" d="M12 12c1.933 0 3.5-1.567 3.5-3.5S13.933 5 12 5s-3.5 1.567-3.5 3.5S10.067 12 12 12Zm0 1.5c-2.485 0-7.5 1.243-7.5 3.75V19h15v-1.75c0-2.507-5.015-3.75-7.5-3.75Z"/></svg>
                             </span>
                         </div>
-                        <div style="font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#333;">${currentUser}</div>
-                        <div style="margin-bottom:18px;">
-                            <b>Waktu Belajar Total:</b> ${Math.round(studyData.studyTime / 60)} jam<br>
-                            <b>Mata Pelajaran Selesai:</b> ${studyData.subjects.filter(s => s.completed).length}<br>
-                            <b>Streak:</b> ${studyData.streak} hari
+                        <div style="font-size:1.3rem;font-weight:700;margin-bottom:18px;color:#333;">${savedUser}</div>
+                        <div class="profile-metrics-grid">
+                            <div class="profile-metric-card topik">
+                                <div class="icon">📚</div>
+                                <div class="value">${totalTopics}</div>
+                                <div class="desc">Topik Belajar</div>
+                            </div>
+                            <div class="profile-metric-card kursus">
+                                <div class="icon">🏆</div>
+                                <div class="value">${completedCourses}</div>
+                                <div class="desc">Kursus Selesai</div>
+                            </div>
+                            <div class="profile-metric-card kegiatan">
+                                <div class="icon">📝</div>
+                                <div class="value">${totalActivities}</div>
+                                <div class="desc">Total Kegiatan</div>
+                            </div>
+                            <div class="profile-metric-card selesai">
+                                <div class="icon">✅</div>
+                                <div class="value">${completedActivities}</div>
+                                <div class="desc">Kegiatan Selesai</div>
+                            </div>
                         </div>
                         <button id='logoutBtn' style='margin-top:10px;width:100%;padding:12px 0;font-weight:700;font-size:1rem;border:none;border-radius:12px;background:linear-gradient(90deg,#667eea,#764ba2);color:white;box-shadow:0 2px 8px rgba(102,126,234,0.15);transition:background 0.3s;'>Logout / Hapus Data</button>
                     </div>
@@ -1453,17 +1559,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             cancelButtonText: 'Batal'
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                // Hapus data dari localStorage
-                                if (currentUser) {
+                                if (savedUser) {
                                     localStorage.removeItem('eduMentorUser');
-                                    localStorage.removeItem(`eduMentorData_${currentUser}`);
+                                    localStorage.removeItem(`eduMentorData_${savedUser}`);
                                 }
-                                // Hapus juga data kegiatan InternTrack
                                 localStorage.removeItem('interntrack_logs');
-                                // Reset variabel global
-                                currentUser = null;
-                                studyData = { subjects: [], studyTime: 0, streak: 0, goals: [] };
-                                // Reload halaman
                                 location.reload();
                             }
                         });
@@ -1566,16 +1666,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // FAQ Chatbot Data
         const faqData = [
             {
-                q: 'Bagaimana cara menambah mata pelajaran?',
-                a: 'Klik tombol "+ Tambah Mata Pelajaran" di dashboard, isi data yang diperlukan, lalu klik "Tambah".'
+                q: 'Bagaimana cara menambah aktivitas belajar?',
+                a: 'Klik tombol "+ Tambah Aktivitas belajar" di dashboard, isi data yang diperlukan, lalu klik "Tambah".'
             },
             {
                 q: 'Bagaimana cara mengatur timer belajar?',
                 a: 'Pilih durasi timer di dropdown pada panel Timer Belajar, lalu klik "Mulai" untuk memulai sesi.'
             },
             {
-                q: 'Bagaimana cara menghapus atau mereset mata pelajaran?',
-                a: 'Centang mata pelajaran yang ingin dihapus atau direset, lalu klik tombol "Hapus Terpilih" atau "Reset Terpilih".'
+                q: 'Bagaimana cara menghapus atau mereset aktivitas belajar?',
+                a: 'Centang aktivitas belajar yang ingin dihapus atau direset, lalu klik tombol "Hapus Terpilih" atau "Reset Terpilih".'
             },
             {
                 q: 'Apa itu progres belajar dan bagaimana cara meningkatkannya?',
@@ -1590,8 +1690,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 a: 'Di tab "Perencana Belajar", klik "+ Tambah Tujuan Baru" dan masukkan tujuan Anda.'
             },
             {
-                q: 'Bagaimana cara melanjutkan belajar pada mata pelajaran tertentu?',
-                a: 'Klik tombol "Lanjutkan" pada mata pelajaran yang ingin Anda pelajari di dashboard.'
+                q: 'Bagaimana cara melanjutkan belajar pada aktivitas belajar tertentu?',
+                a: 'Klik tombol "Lanjutkan" pada aktivitas belajar yang ingin Anda pelajari di dashboard.'
             },
             {
                 q: 'Apa itu milestone dan bagaimana cara mencapainya?',
@@ -1599,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             {
                 q: 'Bagaimana cara mengoptimalkan waktu belajar?',
-                a: 'Gunakan teknik Pomodoro (25 menit fokus), istirahat teratur, dan fokus pada satu mata pelajaran per sesi.'
+                a: 'Gunakan teknik Pomodoro (25 menit fokus), istirahat teratur, dan fokus pada satu aktivitas belajar per sesi.'
             },
             {
                 q: 'Apa manfaat dari tracking progres belajar?',
@@ -1607,15 +1707,15 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             {
                 q: 'Bagaimana cara mengatasi kebosanan saat belajar?',
-                a: 'Variasikan mata pelajaran, gunakan timer untuk sesi pendek, dan tetapkan tujuan kecil yang mudah dicapai.'
+                a: 'Variasikan aktivitas belajar, gunakan timer untuk sesi pendek, dan tetapkan tujuan kecil yang mudah dicapai.'
             },
             {
                 q: 'Apa itu streak belajar dan bagaimana mempertahankannya?',
                 a: 'Streak adalah jumlah hari berturut-turut Anda belajar. Pertahankan dengan belajar minimal 1 sesi per hari.'
             },
             {
-                q: 'Bagaimana cara mengatur prioritas mata pelajaran?',
-                a: 'Identifikasi mata pelajaran yang paling sulit atau penting, lalu alokasikan lebih banyak waktu untuk itu.'
+                q: 'Bagaimana cara mengatur prioritas aktivitas belajar?',
+                a: 'Identifikasi aktivitas belajar yang paling sulit atau penting, lalu alokasikan lebih banyak waktu untuk itu.'
             },
             {
                 q: 'Apa tips untuk belajar yang efektif?',

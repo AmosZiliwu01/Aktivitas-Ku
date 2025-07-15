@@ -21,10 +21,10 @@
     <!-- Add Subject Modal -->
     <div id="subjectModal" class="modal">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">📚 Tambah Aktivitas Belajar Baru</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📚 Tambah Topik Pembelajaran Baru</h2>
             <div class="space-y-4">
-                <input type="text" id="subjectName" class="input-field" placeholder="Nama aktivitas belajar...">
-                <textarea id="subjectDescription" class="input-field" rows="3" placeholder="Deskripsi aktivitas belajar..."></textarea>
+                <input type="text" id="subjectName" class="input-field" placeholder="Nama topik pembelajaran...">
+                <textarea id="subjectDescription" class="input-field" rows="3" placeholder="Deskripsi topik pembelajaran..."></textarea>
                 <select id="subjectDifficulty" class="input-field">
                     <option value="beginner">Pemula</option>
                     <option value="intermediate">Menengah</option>
@@ -32,13 +32,27 @@
                 </select>
                 <p>Tambahkan durasi belajar:</p>
                 <input type="number" id="subjectTime" class="input-field" placeholder="Durasi belajar (menit)" min="1" value="25">
-                <div class="flex space-x-4">
-                    <button class="btn-primary flex-1" onclick="addNewSubject()">Tambah</button>
-                    <button class="btn-primary flex-1" onclick="closeSubjectModal()" style="background: linear-gradient(45deg, #6c757d, #495057);">Batal</button>
+                <div class="flex justify-between gap-4 mt-8 flex-wrap">
+                    <button class="flex-1 min-w-[120px] px-4 py-2 font-bold rounded-lg" type="button" onclick="closeSubjectModal()" style="background: linear-gradient(45deg, #6c757d, #495057); color: white;">Batal</button>
+                    <button class="flex-1 min-w-[120px] px-4 py-2 font-bold rounded-lg" type="button" onclick="addNewSubject()" style="background: linear-gradient(45deg, #ff6b6b, #ff8e8e); color: white;">Tambah</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+    // Tutup modal subjectModal jika klik di luar modal-content
+    document.addEventListener('DOMContentLoaded', function() {
+        const subjectModal = document.getElementById('subjectModal');
+        if(subjectModal) {
+            subjectModal.addEventListener('click', function(e) {
+                if(e.target === subjectModal) {
+                    closeSubjectModal();
+                }
+            });
+        }
+    });
+    </script>
 
     <!-- Floating Background Elements -->
     <div class="floating-elements">
@@ -49,7 +63,7 @@
     </div>
 
     <!-- Header -->
-    <header class="glass-morphism fixed top-0 left-0 right-0 z-50 slide-in">
+    <header class="glass-morphism fixed top-0 left-0 right-0 z-50">
         <div class="container mx-auto px-6 py-4">
             <div class="flex flex-wrap justify-between items-center gap-2 header-bar">
                 <div class="flex items-center space-x-4">
@@ -62,7 +76,7 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 header-menu">
-                    <a href="kegiatan.html" class="btn-primary" style="background: linear-gradient(45deg, #34d399, #3b82f6);">
+                    <a href="kegiatan.html" class="halaman-utama">
                         <span>📋 AktivitasKu</span>
                     </a>
                     <button class="btn-primary" onclick="showProfile()">
@@ -76,7 +90,7 @@
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-8 pt-28">
         <!-- Welcome Section -->
-        <section class="mb-8 slide-in">
+        <section class="mb-8">
             <div class="glass-card rounded-3xl p-8 text-center">
                 <h2 class="text-4xl font-bold text-gray-800 mb-4">
                     Selamat Datang, <span class="text-purple-600" id="userName">Siswa</span>! 🎓
@@ -106,7 +120,7 @@
         </section>
 
         <!-- Navigation Tabs -->
-        <div class="glass-morphism rounded-3xl p-6 mb-8 fade-in">
+        <div class="glass-morphism rounded-3xl p-6 mb-8">
             <div class="flex justify-center space-x-4 flex-wrap">
                 <button class="tab-button active" onclick="showTab('dashboard')">📊 Dashboard</button>
                 <!-- <button class="tab-button" onclick="showTab('learning-path')">🎯 Learning Path</button> -->
@@ -127,7 +141,7 @@
                                 <button class="btn-primary" onclick="deleteSelectedSubjects()" style="background: linear-gradient(45deg, #ff0000, #ff4444);">Hapus Terpilih</button>
                                 <button class="btn-primary" onclick="resetSelectedSubjects()" style="background: linear-gradient(45deg, #f59e42, #fbbf24);">Reset Terpilih</button>
                             </div>
-                            <button class="btn-primary" onclick="openSubjectModal()">+ Tambah Aktivitas Belajar</button>
+                            <button class="btn-primary" onclick="openSubjectModal()">+ Tambah Topik Pembelajaran</button>
                         </div>
                         <div class="space-y-4" id="todaySchedule">
                             <!-- Schedule items will be populated here -->
@@ -254,7 +268,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Prioritas Aktivitas Belajar</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Prioritas Topik Pembelajaran</label>
                                 <select class="input-field" id="prioritySubject">
                                     <!-- Will be populated dynamically -->
                                 </select>
