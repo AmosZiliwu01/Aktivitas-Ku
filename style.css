@@ -781,57 +781,203 @@ body {
         width: 100%;
         max-width: 300px;
     }
+    .mobile-header-toggle {
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin-top: 8px;
+    }
+    .mobile-header-toggle button {
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,#a18cd1 60%,#fbc2eb 100%);
+        color: #6d28d9;
+        font-size: 28px;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.12);
+        border: none;
+        outline: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .mobile-header-toggle button:active {
+        background: linear-gradient(135deg,#fbc2eb 60%,#a18cd1 100%);
+    }
+    .mobile-menu-section {
+        display: block;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.35s cubic-bezier(.4,0,.2,1);
+        width: 100%;
+        z-index: 100;
+    }
+    .mobile-menu-section .rounded-2xl {
+        background: linear-gradient(135deg,#a18cd1 60%,#fbc2eb 100%);
+        border-radius: 18px;
+        margin: 0 8px;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.10);
+    }
+    .mobile-menu-section .btn-primary {
+        width: 100%;
+        margin-bottom: 8px;
+        font-size: 16px;
+        border-radius: 12px;
+        padding: 12px 0;
+    }
+    .mobile-menu-section .btn-primary:last-child {
+        margin-bottom: 0;
+    }
+    .header-menu,
+    .header-bar .btn-primary,
+    .header-bar a.btn-primary {
+        display: none !important;
+    }
+    #mobileHeaderToggle {
+        display: flex !important;
+    }
+    #mobileMenuSection {
+        display: block !important;
+    }
+    .glass-morphism.fixed.top-0.left-0.right-0 {
+        border-radius: 0 0 18px 18px !important;
+        margin-top: 0 !important;
+        box-shadow: 0 4px 24px rgba(102,126,234,0.10);
+    }
+    .glass-morphism .container {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+    .glass-morphism {
+        padding: 0 !important;
+    }
 }
-
-@media (max-width: 480px) {
-    .glass-morphism .container,
-    .floating-header .container {
-        padding: 8px 4px !important;
-    }
-    .glass-morphism .flex,
-    .floating-header .flex {
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-    }
-    .glass-morphism .btn-primary,
-    .glass-morphism .halaman-utama,
-    .glass-morphism .glow-button,
-    .floating-header .btn-primary,
-    .floating-header .halaman-utama,
-    .floating-header .glow-button {
-        padding: 8px 12px !important;
-        font-size: 13px !important;
-        min-width: 90px;
-        max-width: 160px;
-        margin-bottom: 4px;
-        border-radius: 8px !important;
-        width: auto !important;
-        box-sizing: border-box;
-    }
-    .glass-morphism .w-12,
-    .floating-header .w-12 {
-        width: 36px !important;
-        height: 36px !important;
-    }
-    .glass-morphism h1,
-    .floating-header h1 {
-        font-size: 18px !important;
-    }
-    .glass-morphism p,
-    .floating-header p {
-        font-size: 12px !important;
-    }
-    #toggleFormBtn {
-        margin-left: -3px !important;
+@media (min-width: 769px) {
+    .mobile-header-toggle,
+    .mobile-menu-section {
+        display: none !important;
     }
     .header-menu {
-        width: 100%;
         display: flex !important;
+    }
+}
+
+
+@media (max-width: 480px) {
+    /* Kembalikan header ke semula */
+    .floating-header .container,
+    .glass-morphism .container {
+        padding: 8px 4px !important;
+    }
+    
+    .header-menu {
+        display: flex !important;
+        flex-direction: row !important;
         justify-content: center !important;
+        align-items: center !important;
         gap: 8px !important;
+        width: 100%;
         margin-top: 8px;
+        overflow-x: auto;
+        flex-wrap: nowrap !important;
     }
     .header-bar {
         justify-content: center !important;
     }
+    .floating-header .w-12 {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .floating-header h1 {
+        font-size: 18px !important;
+    }
+    .floating-header p {
+        font-size: 12px !important;
+    }
+    /* Section utama tetap responsif */
+    main,
+    .container {
+        padding-top: 100px !important;
+    }
+    .glass-card,
+    .modal-content,
+    .glass-morphism {
+        padding: 10px !important;
+        border-radius: 12px !important;
+        margin: 10px 2px;
+    }
+    .modal-content {
+        padding: 16px !important;
+        max-width: 98vw !important;
+        width: 98vw !important;
+    }
+    .metric-card {
+        margin: 4px !important;
+        padding: 10px !important;
+        font-size: 13px !important;
+    }
+    .btn-primary,
+    .halaman-utama,
+    .glow-button {
+        padding: 10px 0 !important;
+        font-size: 14px !important;
+        min-width: 0 !important;
+        max-width: 100vw !important;
+        width: 100% !important;
+        border-radius: 10px !important;
+        margin-bottom: 4px;
+        justify-content: center !important;
+    }
+    .flex.gap-2 > .btn-primary {
+        min-width: 0 !important;
+        width: 100% !important;
+        font-size: 14px !important;
+        padding: 10px 0 !important;
+    }
+    .input-field {
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+    }
+    .calendar-grid {
+        gap: 2px !important;
+    }
+    .calendar-day {
+        font-size: 13px !important;
+        border-radius: 6px !important;
+        min-width: 28px !important;
+        min-height: 28px !important;
+        padding: 0 !important;
+    }
+    .tab-button {
+        font-size: 13px !important;
+        padding: 10px 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        border-radius: 10px !important;
+    }
+    .study-streak {
+        font-size: 12px !important;
+        padding: 8px 10px !important;
+        border-radius: 8px !important;
+    }
+    h1, h2, h3, h4 {
+        font-size: 18px !important;
+    }
+    .modal .input-field {
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+    }
+    .modal-content .btn-primary {
+        margin-bottom: 0 !important;
+    }
+    .flex.gap-2.mt-4 {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+}
 }

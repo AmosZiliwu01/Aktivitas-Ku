@@ -5,32 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AktivitasKu - Pelacakan Kegiatan Belajar</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen">
-    <!-- Floating Header -->
-    <header class="floating-header fixed top-0 left-0 right-0 z-50">
-        <div class="container mx-auto px-6 py-4">
-            <div class="flex flex-wrap justify-between items-center gap-2 header-bar">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center">
-                        <span class="text-white text-2xl font-bold">📊</span>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-white">AktivitasKu</h1>
-                        <p class="text-white/70 text-sm">Kelola kegiatan belajar Anda</p>
-                    </div>
-                </div>
-                <div class="flex flex-wrap items-center gap-2 header-menu">
-                    <a href="index.html" class="halaman-utama">
-                        <span>🏠 JejakBelajar</span>
-                    </a>
-                    <button class="btn-primary" onclick="showProfile()">
-                        <span>👤 Profil</span>
-                    </button>
-                </div>
+    <!-- Header -->
+    <header class="glass-morphism fixed top-0 left-0 right-0 z-50 pt-2 shadow-md md:rounded-b-2xl">
+      <div class="container mx-auto px-6 py-4">
+        <div class="flex justify-between items-center header-bar">
+          <!-- Kiri: Logo & Judul -->
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+              <span class="text-white text-2xl font-bold">🧠</span>
             </div>
+            <h1 class="text-2xl font-bold text-white">JejakBelajar</h1>
+          </div>
+          <!-- Kanan: Menu (desktop) -->
+          <div class="header-menu flex gap-2">
+              <a href="index.html" class="btn-primary">Dashboard</a>
+            <button onclick="showProfile()" class="btn-primary">Profil</button>
+          </div>
+          <!-- Chevron toggle (mobile only) -->
+          <button id="toggleMenuBtn"
+            class="mt-1 text-white focus:outline-none md:hidden"
+            aria-label="Toggle menu" aria-expanded="false">
+            <i id="chevronIcon" class="fas fa-chevron-down text-xs transition-transform duration-300"></i>
+          </button>
         </div>
+        <!-- Menu mobile (slide down) -->
+        <div id="mobileMenuSection"
+          class="overflow-hidden max-h-0 transition-all duration-300 ease-in-out mt-2 rounded-xl text-center text-white md:hidden"
+          aria-hidden="true">
+          <button onclick="showProfile()" class="w-full mb-2 px-4 py-2 bg-purple-600 rounded-lg">Profil</button>
+          <a href="index.html" class="w-full block mb-2 px-4 py-2 bg-purple-600 rounded-lg">Dashboard</a>
+        </div>
+      </div>
     </header>
 
     <main class="container mx-auto px-6 py-8 pt-24">
@@ -83,7 +92,7 @@
 
         <!-- Log Entries List -->
         <section>
-            <div class="glass-card rounded-3xl p-8">
+            <div class="glass-card rounded-3xl p-8 mb-8">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-white">📝 Kegiatan Terbaru</h2>
                     <div class="flex items-center space-x-3">
@@ -227,5 +236,47 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="script.js"></script>
+    <script>
+        (function () {
+        const btn = document.getElementById('toggleMenuBtn');
+        const menu = document.getElementById('mobileMenuSection');
+        const chevron = document.getElementById('chevronIcon');
+        let open = false;
+
+        function closeMenu() {
+            menu.classList.remove('max-h-screen');
+            menu.classList.add('max-h-0');
+            menu.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+            chevron.classList.remove('rotate-180');
+            open = false;
+        }
+
+        function openMenu() {
+            menu.classList.remove('max-h-0');
+            menu.classList.add('max-h-screen');
+            menu.setAttribute('aria-hidden', 'false');
+            btn.setAttribute('aria-expanded', 'true');
+            chevron.classList.add('rotate-180');
+            open = true;
+        }
+
+        function handleToggle() {
+            open ? closeMenu() : openMenu();
+        }
+
+        if (btn && menu && chevron) {
+            btn.onclick = handleToggle;
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) closeMenu();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.innerWidth <= 768) closeMenu();
+        });
+        })();
+</script>
 </body>
 </html>

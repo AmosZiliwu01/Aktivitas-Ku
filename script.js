@@ -948,17 +948,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         // Enhanced resetTimer function with milestone-based progress reset
-function resetTimer() {
-    robustTimer.reset();
-    
-    const defaultDuration = 25;
-    document.getElementById('timerDisplay').textContent = `${defaultDuration.toString().padStart(2, '0')}:00`;
-    document.getElementById('timerBtn').style.display = 'block';
-    document.getElementById('timerSelect').disabled = false;
-    
+        function resetTimer() {
+            robustTimer.reset();
+            
+            const defaultDuration = 25;
+            document.getElementById('timerDisplay').textContent = `${defaultDuration.toString().padStart(2, '0')}:00`;
+            document.getElementById('timerBtn').style.display = 'block';
+            document.getElementById('timerSelect').disabled = false;
+            
     // Reset subject progress with milestone rounding - BUT NOT if already 100%
-    if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
-        const subject = studyData.subjects[window.lastContinuedSubjectIndex];
+            if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+                const subject = studyData.subjects[window.lastContinuedSubjectIndex];
         
         // Don't reset if subject is already completed (100%)
         if (subject.completed && subject.progress >= 100) {
@@ -969,32 +969,32 @@ function resetTimer() {
             return;
         }
         
-        let targetTime = parseFloat(subject.targetTime);
-        if (!targetTime || isNaN(targetTime)) targetTime = 25;
-        
+                let targetTime = parseFloat(subject.targetTime);
+                if (!targetTime || isNaN(targetTime)) targetTime = 25;
+                
         // Calculate total time including running timer
-        let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
-        let progressRaw = (totalTime / targetTime) * 100;
-        
+                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
+                let progressRaw = (totalTime / targetTime) * 100;
+                
         // Round down to nearest 25% milestone
         let milestone = 0;
-        if (progressRaw >= 75) milestone = 75;
-        else if (progressRaw >= 50) milestone = 50;
-        else if (progressRaw >= 25) milestone = 25;
+                if (progressRaw >= 75) milestone = 75;
+                else if (progressRaw >= 50) milestone = 50;
+                else if (progressRaw >= 25) milestone = 25;
         else milestone = 0;
-        
+                
         // Update subject data based on milestone
-        if (milestone === 0) {
-            subject.totalTime = 0;
-            subject.runningTimerElapsed = 0;
-            subject.progress = 0;
-            subject.completed = false;
+                if (milestone === 0) {
+                    subject.totalTime = 0;
+                    subject.runningTimerElapsed = 0;
+                    subject.progress = 0;
+                    subject.completed = false;
             showNotification('Progress direset ke 0%. Semangat untuk memulai lagi! 💪');
-        } else {
-            subject.totalTime = (milestone / 100) * targetTime;
-            subject.runningTimerElapsed = 0;
-            subject.progress = milestone;
-            subject.completed = (milestone === 100);
+                } else {
+                    subject.totalTime = (milestone / 100) * targetTime;
+                    subject.runningTimerElapsed = 0;
+                    subject.progress = milestone;
+                    subject.completed = (milestone === 100);
             showNotification(`Progress direset ke ${milestone}%. Lanjutkan belajar dengan semangat! 🎯`);
         }
         
@@ -1003,35 +1003,35 @@ function resetTimer() {
         
         // Update DOM immediately
         updateDOMProgress(subject.name, milestone);
-    }
-    
-    // Reset labels
-    window.lastContinuedSubjectName = null;
-    window.lastContinuedSubjectIndex = null;
-    updateActiveSubjectName();
-    saveUserData();
-    updateDashboard();
-}
-
+            }
+            
+            // Reset labels
+            window.lastContinuedSubjectName = null;
+            window.lastContinuedSubjectIndex = null;
+            updateActiveSubjectName();
+            saveUserData();
+            updateDashboard();
+        }
+        
 // Enhanced updateSubjectProgress with milestone notifications
-function updateSubjectProgress(elapsedMinutes) {
-    if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
-        const subject = studyData.subjects[window.lastContinuedSubjectIndex];
-        let targetTime = parseFloat(subject.targetTime);
-        if (!targetTime || isNaN(targetTime)) targetTime = 25;
-        
-        subject.runningTimerElapsed = elapsedMinutes;
-        let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
-        let progressRaw = (totalTime / targetTime) * 100;
-        let progress = Math.floor(progressRaw);
-        if (progress > 100) progress = 100;
-        if (progress < 0 || isNaN(progress)) progress = 0;
-        
+        function updateSubjectProgress(elapsedMinutes) {
+            if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+                const subject = studyData.subjects[window.lastContinuedSubjectIndex];
+                let targetTime = parseFloat(subject.targetTime);
+                if (!targetTime || isNaN(targetTime)) targetTime = 25;
+                
+                subject.runningTimerElapsed = elapsedMinutes;
+                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
+                let progressRaw = (totalTime / targetTime) * 100;
+                let progress = Math.floor(progressRaw);
+                if (progress > 100) progress = 100;
+                if (progress < 0 || isNaN(progress)) progress = 0;
+                
         // Initialize milestone tracking if not exists
         if (!subject._milestoneNotified) subject._milestoneNotified = {};
         
         // Check for milestone achievements with encouraging messages
-        const milestones = [25, 50, 75, 100];
+                const milestones = [25, 50, 75, 100];
         milestones.forEach(milestone => {
             if (progress >= milestone && !subject._milestoneNotified[milestone]) {
                 let message = '';
@@ -1054,8 +1054,8 @@ function updateSubjectProgress(elapsedMinutes) {
                 
                 // Play bell sound for completion
                 if (milestone === 100 && typeof bellAudio !== 'undefined' && bellAudio) {
-                    bellAudio.play();
-                }
+                            bellAudio.play();
+                        }
                 
                 subject._milestoneNotified[milestone] = true;
             }
@@ -1065,29 +1065,29 @@ function updateSubjectProgress(elapsedMinutes) {
                 subject._milestoneNotified[milestone] = false;
             }
         });
-        
-        subject.progress = progress;
+                
+                subject.progress = progress;
         subject.completed = (progress >= 100);
-        
+                
         // Stop timer if completed
-        if (subject.completed) {
-            robustTimer.stop();
-            document.getElementById('timerBtn').style.display = 'block';
-            document.getElementById('timerSelect').disabled = false;
+                if (subject.completed) {
+                    robustTimer.stop();
+                    document.getElementById('timerBtn').style.display = 'block';
+                    document.getElementById('timerSelect').disabled = false;
+                }
+                
+                updateDOMProgress(subject.name, progress);
+                saveUserData();
+            }
         }
         
-        updateDOMProgress(subject.name, progress);
-        saveUserData();
-    }
-}
-
 // Enhanced updateDOMProgress with visual feedback
-function updateDOMProgress(subjectName, progress) {
-    const scheduleContainer = document.getElementById('todaySchedule');
-    if (scheduleContainer && window.lastContinuedSubjectName) {
-        const card = scheduleContainer.querySelector(`.learning-path-item[data-subject-name="${window.lastContinuedSubjectName}"]`);
-        if (card) {
-            const percentEl = card.querySelector('.text-2xl.font-bold.text-purple-600');
+        function updateDOMProgress(subjectName, progress) {
+            const scheduleContainer = document.getElementById('todaySchedule');
+            if (scheduleContainer && window.lastContinuedSubjectName) {
+                const card = scheduleContainer.querySelector(`.learning-path-item[data-subject-name="${window.lastContinuedSubjectName}"]`);
+                if (card) {
+                    const percentEl = card.querySelector('.text-2xl.font-bold.text-purple-600');
             if (percentEl) {
                 percentEl.textContent = progress + '%';
                 
@@ -1102,8 +1102,8 @@ function updateDOMProgress(subjectName, progress) {
                     percentEl.style.color = '#8b5cf6'; // Purple for <25%
                 }
             }
-            
-            const barEl = card.querySelector('.h-full.bg-purple-600.rounded-full');
+                    
+                    const barEl = card.querySelector('.h-full.bg-purple-600.rounded-full');
             if (barEl) {
                 barEl.style.width = progress + '%';
                 
@@ -1239,69 +1239,69 @@ function updateActiveSubjectName() {
 }
 
 // Timer duration change function
-function changeTimerDuration() {
-    const newDuration = parseInt(document.getElementById('timerSelect').value);
-    document.getElementById('timerDisplay').textContent = `${newDuration.toString().padStart(2, '0')}:00`;
-}
-
-// Enhanced Page Visibility API for better handling
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        // Tab became inactive - timer continues running automatically
-        console.log('Tab inactive - timer continues in background');
-    } else {
-        // Tab became active - force display update
-        console.log('Tab active - syncing timer display');
-        if (robustTimer.isRunning) {
-            robustTimer.updateDisplay();
+        function changeTimerDuration() {
+            const newDuration = parseInt(document.getElementById('timerSelect').value);
+            document.getElementById('timerDisplay').textContent = `${newDuration.toString().padStart(2, '0')}:00`;
         }
-    }
-});
-
-// Additional recovery mechanism on focus
-window.addEventListener('focus', function() {
-    if (robustTimer.isRunning) {
-        robustTimer.updateDisplay();
-    }
-});
-
-// Periodic sync every 5 seconds as backup
-setInterval(() => {
-    if (robustTimer.isRunning) {
-        robustTimer.updateDisplay();
-    }
-}, 5000);
+        
+        // Enhanced Page Visibility API for better handling
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Tab became inactive - timer continues running automatically
+                console.log('Tab inactive - timer continues in background');
+            } else {
+                // Tab became active - force display update
+                console.log('Tab active - syncing timer display');
+                if (robustTimer.isRunning) {
+                    robustTimer.updateDisplay();
+                }
+            }
+        });
+        
+        // Additional recovery mechanism on focus
+        window.addEventListener('focus', function() {
+            if (robustTimer.isRunning) {
+                robustTimer.updateDisplay();
+            }
+        });
+        
+        // Periodic sync every 5 seconds as backup
+        setInterval(() => {
+            if (robustTimer.isRunning) {
+                robustTimer.updateDisplay();
+            }
+        }, 5000);
 
 // Chat function
-function addMessageToChat(message, sender) {
-    const chatContainer = document.getElementById('chatContainer');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `chat-bubble ${sender}-message`;
-    
-    if (sender === 'user') {
-        messageDiv.innerHTML = `
-            <div class="text-right">
-                <div class="font-semibold text-white mb-1">${currentUser}</div>
-                <div class="text-white">${message}</div>
-            </div>
-        `;
-    } else {
-        messageDiv.innerHTML = `
-            <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <span class="text-white text-sm">🤖</span>
-                </div>
-                <div>
-                    <div class="font-semibold text-gray-800 mb-1">EduMentor Chatbot</div>
-                    <div class="text-gray-700">${message}</div>
-                </div>
-            </div>
-        `;
-    }
-    
-    chatContainer.appendChild(messageDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+        function addMessageToChat(message, sender) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-bubble ${sender}-message`;
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="text-right">
+                        <div class="font-semibold text-white mb-1">${currentUser}</div>
+                        <div class="text-white">${message}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm">🤖</span>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-800 mb-1">EduMentor Chatbot</div>
+                            <div class="text-gray-700">${message}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
 // Enhanced Calendar and Study Planner Code - v3.0
 // More robust initialization and form handling
 
@@ -1414,9 +1414,9 @@ function showCalendarNotification(message, type = 'success') {
 }
 
 // Enhanced calendar generation with error handling
-function generateCalendar() {
+        function generateCalendar() {
     try {
-        const calendarGrid = document.getElementById('calendarGrid');
+            const calendarGrid = document.getElementById('calendarGrid');
         const calendarMonth = document.getElementById('calendarMonth');
         
         if (!calendarGrid || !calendarMonth) {
@@ -1431,30 +1431,30 @@ function generateCalendar() {
         
         const firstDay = new Date(window.calendarData.currentYear, window.calendarData.currentMonth, 1).getDay();
         const daysInMonth = new Date(window.calendarData.currentYear, window.calendarData.currentMonth + 1, 0).getDate();
-        
-        calendarGrid.innerHTML = '';
-        
+            
+            calendarGrid.innerHTML = '';
+            
         // Add day headers
-        const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-        dayHeaders.forEach(day => {
-            const headerDiv = document.createElement('div');
+            const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            dayHeaders.forEach(day => {
+                const headerDiv = document.createElement('div');
             headerDiv.className = 'calendar-day font-bold text-gray-600 text-center py-2';
-            headerDiv.textContent = day;
-            calendarGrid.appendChild(headerDiv);
-        });
-        
+                headerDiv.textContent = day;
+                calendarGrid.appendChild(headerDiv);
+            });
+            
         // Add empty cells for days before the first day
-        for (let i = 0; i < firstDay; i++) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'calendar-day';
-            calendarGrid.appendChild(emptyDiv);
-        }
-        
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'calendar-day';
+                calendarGrid.appendChild(emptyDiv);
+            }
+            
         // Add days of the month
-        const today = new Date();
-        for (let day = 1; day <= daysInMonth; day++) {
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${window.calendarData.currentYear}-${String(window.calendarData.currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const dayDiv = document.createElement('div');
+                const dayDiv = document.createElement('div');
             dayDiv.className = 'calendar-day text-center py-3 rounded-lg transition-colors cursor-pointer hover:bg-gray-100';
             
             // Check if there's a study plan for this date
@@ -1485,7 +1485,7 @@ function generateCalendar() {
             }
             
             dayDiv.innerHTML = `${topicLabel}<div>${day}</div>`;
-            calendarGrid.appendChild(dayDiv);
+                calendarGrid.appendChild(dayDiv);
         }
         
         // Update nearest plans list
@@ -1500,7 +1500,7 @@ function generateCalendar() {
 }
 
 // Enhanced month navigation
-function changeMonth(direction) {
+        function changeMonth(direction) {
     try {
         window.calendarData.currentMonth += direction;
         if (window.calendarData.currentMonth > 11) {
@@ -1509,8 +1509,8 @@ function changeMonth(direction) {
         } else if (window.calendarData.currentMonth < 0) {
             window.calendarData.currentMonth = 11;
             window.calendarData.currentYear--;
-        }
-        generateCalendar();
+            }
+            generateCalendar();
     } catch (error) {
         console.error('Error changing month:', error);
         showCalendarNotification('Gagal mengganti bulan', 'error');
@@ -1740,7 +1740,7 @@ function initializeStudyPlanner() {
         
         console.log('Study planner initialized successfully');
         
-    } catch (error) {
+            } catch (error) {
         console.error('Error initializing study planner:', error);
         showCalendarNotification('Gagal menginisialisasi planner', 'error');
     }
@@ -1789,10 +1789,10 @@ function showCalendarPlanDetailModal(dateStr) {
                         <div class="flex gap-2 mt-2">
                             <button class="btn-primary" style="padding:4px 12px;font-size:13px;" onclick="editCalendarStudyPlan('${dateStr}')">🛠️ Edit</button>
                             <button class="delete-btn" style="padding:4px 12px;font-size:13px;" onclick="deleteCalendarStudyPlan('${dateStr}')">🗑️ Hapus</button>
-                        </div>
+                    </div>
                     </div>
                     <button class="btn-primary w-full mt-4" style="display:flex;justify-content:center;align-items:center;text-align:center;" onclick="closeCalendarModal()">Tutup</button>
-                </div>
+                    </div>
             `;
         } else {
             // Modal for empty date
@@ -1813,8 +1813,8 @@ function showCalendarPlanDetailModal(dateStr) {
                       <button class="btn-primary flex-1" onclick="createNewCalendarPlan('${dateStr}')">📝 Buat Rencana</button>
                       <button class="btn-primary flex-1" onclick="closeCalendarModal()">Tutup</button>
                     </div>
-                </div>
-            `;
+                    </div>
+                `;
         }
         
         // Close modal when clicking outside
@@ -1838,7 +1838,7 @@ function closeCalendarModal() {
         if (modal) {
             modal.style.opacity = '0';
             modal.style.visibility = 'hidden';
-            setTimeout(() => { 
+            setTimeout(() => {
                 if (modal.parentNode) {
                     modal.parentNode.removeChild(modal);
                 }
@@ -1896,15 +1896,15 @@ function deleteCalendarStudyPlan(dateStr) {
             return;
         }
         // Ganti confirm dengan SweetAlert
-        Swal.fire({
+            Swal.fire({
             title: 'Hapus rencana belajar ini?',
             text: 'Data yang dihapus tidak dapat dikembalikan!',
-            icon: 'warning',
-            showCancelButton: true,
+                            icon: 'warning',
+                            showCancelButton: true,
             confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
+                            cancelButtonText: 'Batal'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
                 delete window.calendarData.studyPlans[dateStr];
                 saveCalendarStudyPlans();
                 closeCalendarModal();
@@ -2034,57 +2034,57 @@ window.loadStudyPlans = loadStudyPlans;
 window.saveStudyPlans = saveStudyPlans;
 
 // Fungsi untuk toggle centang subject
-function toggleSelectSubject(index) {
-    if (!window.selectedSubjectIndexes) window.selectedSubjectIndexes = [];
-    const idx = window.selectedSubjectIndexes.indexOf(index);
-    if (idx === -1) {
-        window.selectedSubjectIndexes.push(index);
-    } else {
-        window.selectedSubjectIndexes.splice(idx, 1);
-    }
+        function toggleSelectSubject(index) {
+            if (!window.selectedSubjectIndexes) window.selectedSubjectIndexes = [];
+            const idx = window.selectedSubjectIndexes.indexOf(index);
+            if (idx === -1) {
+                window.selectedSubjectIndexes.push(index);
+            } else {
+                window.selectedSubjectIndexes.splice(idx, 1);
+            }
     updateTodaySchedule();
-}
+        }
 window.toggleSelectSubject = toggleSelectSubject;
 
 // Fungsi untuk hapus semua subject yang dicentang
-function deleteSelectedSubjects() {
+        function deleteSelectedSubjects() {
     if (!window.selectedSubjectIndexes || window.selectedSubjectIndexes.length === 0) return;
-    Swal.fire({
+            Swal.fire({
         title: `Hapus ${window.selectedSubjectIndexes.length} topik terpilih?`,
         text: 'Data yang dihapus tidak dapat dikembalikan!',
-        icon: 'warning',
-        showCancelButton: true,
+                icon: 'warning',
+                showCancelButton: true,
         confirmButtonText: 'Ya, hapus!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
             // Hapus dari studyData.subjects berdasarkan index
             // Urutkan index dari besar ke kecil agar splice tidak menggeser
             window.selectedSubjectIndexes.sort((a, b) => b - a).forEach(idx => {
-                studyData.subjects.splice(idx, 1);
-            });
-            window.selectedSubjectIndexes = [];
-            saveUserData();
-            updateDashboard();
+                        studyData.subjects.splice(idx, 1);
+                    });
+                    window.selectedSubjectIndexes = [];
+                    saveUserData();
+                    updateDashboard();
             showNotification('Topik terpilih berhasil dihapus!');
+                }
+            });
         }
-    });
-}
 window.deleteSelectedSubjects = deleteSelectedSubjects;
 
 // Fungsi untuk reset progress semua subject yang dicentang
-function resetSelectedSubjects() {
+        function resetSelectedSubjects() {
     if (!window.selectedSubjectIndexes || window.selectedSubjectIndexes.length === 0) return;
-    Swal.fire({
+            Swal.fire({
         title: `Reset progress ${window.selectedSubjectIndexes.length} topik?`,
         text: 'Progress akan direset ke 0%.',
-        icon: 'question',
-        showCancelButton: true,
+                icon: 'question',
+                showCancelButton: true,
         confirmButtonText: 'Ya, reset!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.selectedSubjectIndexes.forEach(idx => {
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.selectedSubjectIndexes.forEach(idx => {
                 const subject = studyData.subjects[idx];
                 if (subject) {
                     subject.totalTime = 0;
@@ -2093,14 +2093,14 @@ function resetSelectedSubjects() {
                     subject.completed = false;
                     subject.lastMilestone = 0;
                     subject._milestoneNotified = {};
+                        }
+                    });
+                    saveUserData();
+                    updateDashboard();
+            showNotification('Progress topik terpilih berhasil direset!');
                 }
             });
-            saveUserData();
-            updateDashboard();
-            showNotification('Progress topik terpilih berhasil direset!');
         }
-    });
-}
 window.resetSelectedSubjects = resetSelectedSubjects;
 
 // --- Redefinisi continueStudy agar langsung start timer setelah pilih subject ---
