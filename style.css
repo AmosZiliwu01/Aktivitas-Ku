@@ -520,25 +520,6 @@ body {
     color: white;
 }
 
-/* ===== CHAT COMPONENTS ===== */
-.chat-bubble {
-    margin: 16px 0;
-    padding: 16px;
-    border-radius: 16px;
-}
-
-.ai-message {
-    background: rgba(102, 126, 234, 0.1);
-    border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-.user-message {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    margin-left: auto;
-    max-width: 80%;
-}
-
 /* ===== CALENDAR ===== */
 .calendar-grid {
     display: grid;

@@ -482,19 +482,6 @@ function closeAddActivityModal() {
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new EnhancedInternTrack();
     
-    // Close modal when clicking outside
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-                if (modal.id === 'addActivityModal') {
-                    window.app.clearForm();
-                }
-            }
-        });
-    });
-    
     // Close modal with Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -507,6 +494,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // Close subjectModal (index.html) when clicking outside modal-content
+    const subjectModal = document.getElementById('subjectModal');
+    if(subjectModal) {
+        subjectModal.addEventListener('click', function(e) {
+            if(e.target === subjectModal) {
+                closeSubjectModal();
+            }
+        });
+    }
 });
 
 //index.html
@@ -556,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUser = name;
                 localStorage.setItem('eduMentorUser', name);
                 document.getElementById('nameModal').classList.remove('show');
-                showNotification(`Selamat datang, ${name}! 🎉`);
+                showNotification(`Selamat datang, ${name}! `);
                 initializeApp();
             } else {
                 showNotification('Silakan masukkan nama Anda terlebih dahulu', 'error');
@@ -589,12 +586,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
+            window.studyData = studyData; // <-- Tambahkan ini
         }
 
         function saveUserData() {
             if (currentUser) {
                 localStorage.setItem(`eduMentorData_${currentUser}`, JSON.stringify(studyData));
             }
+            window.studyData = studyData; // <-- Tambahkan ini
         }
 
         function initializeApp() {
@@ -612,16 +611,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
-            
             if (tabName === 'learning-path') {
                 updateLearningPath();
-            } else if (tabName === 'study-planner') {
-                updateStudyPlanner();
-            } else if (tabName === 'analytics') {
-                updateAnalytics();
+            }
+            if (tabName === 'study-planner') {
+                initializeStudyPlanner();
             }
         }
 
@@ -647,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Cek nama subject sudah ada (case-insensitive)
             const nameExists = studyData.subjects.some(s => s.name.trim().toLowerCase() === name.toLowerCase());
             if (nameExists) {
-                Swal.fire('Gagal', 'Nama aktivitas belajar sudah ada, gunakan nama lain!', 'error');
+                Swal.fire('Gagal', 'Nama topik pembelajaran sudah ada, gunakan nama lain!', 'error');
                 return;
             }
             if (name && description && time > 0) {
@@ -670,7 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset to first page when adding new subject
                 window.currentSchedulePage = 1;
                 updateDashboard();
-                showNotification(`Aktivitas belajar "${name}" berhasil ditambahkan! 📚`);
+                showNotification(`Topik pembelajaran "${name}" berhasil ditambahkan! 📚`);
             } else {
                 showNotification('Silakan lengkapi semua field', 'error');
             }
@@ -703,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (studyData.subjects.length === 0) {
                 scheduleContainer.innerHTML = `
                     <div class="text-center py-8">
-                        <p class="text-gray-500">Belum ada aktivitas belajar. Klik "Tambah Aktivitas belajar" untuk menambahkan.</p>
+                        <p class="text-gray-500">Belum ada topik pembelajaran. Klik "Tambah Topik Pembelajaran" untuk menambahkan.</p>
                     </div>
                 `;
                 // Sembunyikan tombol aksi jika tidak ada subject
@@ -806,6 +802,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function updatePrioritySubjects() {
             const prioritySelect = document.getElementById('prioritySubject');
+            if (!prioritySelect) return;
             prioritySelect.innerHTML = '';
             
             studyData.subjects.forEach(subject => {
@@ -944,837 +941,1341 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     resetTimer();
-                    showNotification('Sesi selesai! Istirahat! 🎉');
+                    showNotification('Sesi selesai! Istirahat! ');
                     updateMetrics();
                     updateDashboard();
                 }
             });
         }
+        // Enhanced resetTimer function with milestone-based progress reset
+function resetTimer() {
+    robustTimer.reset();
+    
+    const defaultDuration = 25;
+    document.getElementById('timerDisplay').textContent = `${defaultDuration.toString().padStart(2, '0')}:00`;
+    document.getElementById('timerBtn').style.display = 'block';
+    document.getElementById('timerSelect').disabled = false;
+    
+    // Reset subject progress with milestone rounding - BUT NOT if already 100%
+    if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+        const subject = studyData.subjects[window.lastContinuedSubjectIndex];
         
-        function resetTimer() {
-            robustTimer.reset();
+        // Don't reset if subject is already completed (100%)
+        if (subject.completed && subject.progress >= 100) {
+            showNotification('🏆 Subjek ini sudah selesai 100%! Tidak bisa direset dari timer. Gunakan reset di jadwal jika perlu.');
+            window.lastContinuedSubjectName = null;
+            window.lastContinuedSubjectIndex = null;
+            updateActiveSubjectName();
+            return;
+        }
+        
+        let targetTime = parseFloat(subject.targetTime);
+        if (!targetTime || isNaN(targetTime)) targetTime = 25;
+        
+        // Calculate total time including running timer
+        let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
+        let progressRaw = (totalTime / targetTime) * 100;
+        
+        // Round down to nearest 25% milestone
+        let milestone = 0;
+        if (progressRaw >= 75) milestone = 75;
+        else if (progressRaw >= 50) milestone = 50;
+        else if (progressRaw >= 25) milestone = 25;
+        else milestone = 0;
+        
+        // Update subject data based on milestone
+        if (milestone === 0) {
+            subject.totalTime = 0;
+            subject.runningTimerElapsed = 0;
+            subject.progress = 0;
+            subject.completed = false;
+            showNotification('Progress direset ke 0%. Semangat untuk memulai lagi! 💪');
+        } else {
+            subject.totalTime = (milestone / 100) * targetTime;
+            subject.runningTimerElapsed = 0;
+            subject.progress = milestone;
+            subject.completed = (milestone === 100);
+            showNotification(`Progress direset ke ${milestone}%. Lanjutkan belajar dengan semangat! 🎯`);
+        }
+        
+        // Reset milestone notifications for future sessions
+        subject._milestoneNotified = {};
+        
+        // Update DOM immediately
+        updateDOMProgress(subject.name, milestone);
+    }
+    
+    // Reset labels
+    window.lastContinuedSubjectName = null;
+    window.lastContinuedSubjectIndex = null;
+    updateActiveSubjectName();
+    saveUserData();
+    updateDashboard();
+}
+
+// Enhanced updateSubjectProgress with milestone notifications
+function updateSubjectProgress(elapsedMinutes) {
+    if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+        const subject = studyData.subjects[window.lastContinuedSubjectIndex];
+        let targetTime = parseFloat(subject.targetTime);
+        if (!targetTime || isNaN(targetTime)) targetTime = 25;
+        
+        subject.runningTimerElapsed = elapsedMinutes;
+        let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
+        let progressRaw = (totalTime / targetTime) * 100;
+        let progress = Math.floor(progressRaw);
+        if (progress > 100) progress = 100;
+        if (progress < 0 || isNaN(progress)) progress = 0;
+        
+        // Initialize milestone tracking if not exists
+        if (!subject._milestoneNotified) subject._milestoneNotified = {};
+        
+        // Check for milestone achievements with encouraging messages
+        const milestones = [25, 50, 75, 100];
+        milestones.forEach(milestone => {
+            if (progress >= milestone && !subject._milestoneNotified[milestone]) {
+                let message = '';
+                switch(milestone) {
+                    case 25:
+                        message = ` Selamat! Anda telah menyelesaikan 25% dari target belajar ${subject.name}! Terus semangat!`;
+                        break;
+                    case 50:
+                        message = `🌟 Luar biasa! Anda sudah mencapai 50% dari target belajar ${subject.name}! Setengah jalan sudah ditempuh!`;
+                        break;
+                    case 75:
+                        message = `🚀 Keren! Anda telah menyelesaikan 75% dari target belajar ${subject.name}! Sedikit lagi menuju 100%!`;
+                        break;
+                    case 100:
+                        message = `🏆 Fantastis! Anda telah menyelesaikan 100% target belajar ${subject.name}! Pembelajaran selesai!`;
+                        break;
+                }
+                
+                showNotification(message);
+                
+                // Play bell sound for completion
+                if (milestone === 100 && typeof bellAudio !== 'undefined' && bellAudio) {
+                    bellAudio.play();
+                }
+                
+                subject._milestoneNotified[milestone] = true;
+            }
             
-            const defaultDuration = 25;
-            document.getElementById('timerDisplay').textContent = `${defaultDuration.toString().padStart(2, '0')}:00`;
+            // Reset flag if progress drops below milestone (for edge cases)
+            if (progress < milestone && subject._milestoneNotified[milestone]) {
+                subject._milestoneNotified[milestone] = false;
+            }
+        });
+        
+        subject.progress = progress;
+        subject.completed = (progress >= 100);
+        
+        // Stop timer if completed
+        if (subject.completed) {
+            robustTimer.stop();
             document.getElementById('timerBtn').style.display = 'block';
             document.getElementById('timerSelect').disabled = false;
+        }
+        
+        updateDOMProgress(subject.name, progress);
+        saveUserData();
+    }
+}
+
+// Enhanced updateDOMProgress with visual feedback
+function updateDOMProgress(subjectName, progress) {
+    const scheduleContainer = document.getElementById('todaySchedule');
+    if (scheduleContainer && window.lastContinuedSubjectName) {
+        const card = scheduleContainer.querySelector(`.learning-path-item[data-subject-name="${window.lastContinuedSubjectName}"]`);
+        if (card) {
+            const percentEl = card.querySelector('.text-2xl.font-bold.text-purple-600');
+            if (percentEl) {
+                percentEl.textContent = progress + '%';
+                
+                // Add visual feedback for milestones
+                if (progress >= 75) {
+                    percentEl.style.color = '#10b981'; // Green for 75%+
+                } else if (progress >= 50) {
+                    percentEl.style.color = '#f59e0b'; // Yellow for 50%+
+                } else if (progress >= 25) {
+                    percentEl.style.color = '#3b82f6'; // Blue for 25%+
+                } else {
+                    percentEl.style.color = '#8b5cf6'; // Purple for <25%
+                }
+            }
             
-            // Reset subject progress (your existing logic)
+            const barEl = card.querySelector('.h-full.bg-purple-600.rounded-full');
+            if (barEl) {
+                barEl.style.width = progress + '%';
+                
+                // Add gradient colors based on progress
+                if (progress >= 75) {
+                    barEl.style.background = 'linear-gradient(45deg, #10b981, #065f46)';
+                } else if (progress >= 50) {
+                    barEl.style.background = 'linear-gradient(45deg, #f59e0b, #d97706)';
+                } else if (progress >= 25) {
+                    barEl.style.background = 'linear-gradient(45deg, #3b82f6, #1d4ed8)';
+                } else {
+                    barEl.style.background = 'linear-gradient(45deg, #8b5cf6, #7c3aed)';
+                }
+            }
+            
+            // Update card styling for completed subjects
+            if (progress >= 100) {
+                card.classList.add('completed');
+                card.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.3)';
+            } else {
+                card.classList.remove('completed');
+                card.style.boxShadow = '';
+            }
+        }
+    }
+}
+
+// Enhanced startTimer function
+function startTimer() {
+    if (robustTimer.isRunning) return;
+    
+    // Check if current subject is already completed
+    if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
+        const subject = studyData.subjects[window.lastContinuedSubjectIndex];
+        if (subject.completed && subject.progress >= 100) {
+            showNotification('🏆 Subjek ini sudah selesai 100%! Pilih subjek lain atau reset di jadwal jika perlu.');
+            return;
+        }
+    }
+    
+    const selectedDuration = parseInt(document.getElementById('timerSelect').value) || 25;
+    document.getElementById('timerBtn').style.display = 'none';
+    document.getElementById('timerSelect').disabled = true;
+    
+    // Show start notification
+    if (window.lastContinuedSubjectName) {
+        showNotification(`Timer dimulai untuk ${window.lastContinuedSubjectName}! Fokus dan semangat belajar! 🎯`);
+    } else {
+        showNotification('Timer belajar dimulai! Tetap fokus dan semangat! ⏰');
+    }
+    
+    updateActiveSubjectName();
+    
+    robustTimer.start(selectedDuration, {
+        onTick: (timeData) => {
+            const display = `${timeData.minutes.toString().padStart(2, '0')}:${timeData.seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timerDisplay').textContent = display;
+            updateSubjectProgress(timeData.elapsed / 60);
+        },
+        onComplete: () => {
+            // Play completion sound
+            if (typeof bellAudio !== 'undefined' && bellAudio) {
+                bellAudio.play();
+            }
+            
+            // Save completed session
             if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
                 const subject = studyData.subjects[window.lastContinuedSubjectIndex];
-                let targetTime = parseFloat(subject.targetTime);
-                if (!targetTime || isNaN(targetTime)) targetTime = 25;
+                subject.totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
+                subject.runningTimerElapsed = 0;
+                saveUserData();
+            }
+            
+            resetTimer();
+            showNotification(' Sesi belajar selesai! Waktunya istirahat sejenak. Great job!');
+            updateMetrics();
+            updateDashboard();
+        }
+    });
+}
+
+// Enhanced notification system
+function showNotification(message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+    notification.style.maxWidth = '400px';
+    notification.innerHTML = `
+        <div class="flex items-center space-x-3">
+            <div class="text-2xl"></div>
+            <div class="flex-1">
+                <div class="font-semibold">Notifikasi Belajar</div>
+                <div class="text-sm opacity-90">${message}</div>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(full)';
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Enhanced updateActiveSubjectName function
+function updateActiveSubjectName() {
+    const el = document.getElementById('activeSubjectName');
+    if (!el) return;
+    
+    if (window.lastContinuedSubjectName) {
+        el.textContent = `Sedang belajar: ${window.lastContinuedSubjectName}`;
+        el.style.color = '#10b981'; // Green when active
+    } else {
+        el.textContent = 'Pilih topik pembelajaran untuk memulai';
+        el.style.color = '#6b7280'; // Gray when inactive
+    }
+}
+
+// Timer duration change function
+function changeTimerDuration() {
+    const newDuration = parseInt(document.getElementById('timerSelect').value);
+    document.getElementById('timerDisplay').textContent = `${newDuration.toString().padStart(2, '0')}:00`;
+}
+
+// Enhanced Page Visibility API for better handling
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // Tab became inactive - timer continues running automatically
+        console.log('Tab inactive - timer continues in background');
+    } else {
+        // Tab became active - force display update
+        console.log('Tab active - syncing timer display');
+        if (robustTimer.isRunning) {
+            robustTimer.updateDisplay();
+        }
+    }
+});
+
+// Additional recovery mechanism on focus
+window.addEventListener('focus', function() {
+    if (robustTimer.isRunning) {
+        robustTimer.updateDisplay();
+    }
+});
+
+// Periodic sync every 5 seconds as backup
+setInterval(() => {
+    if (robustTimer.isRunning) {
+        robustTimer.updateDisplay();
+    }
+}, 5000);
+
+// Chat function
+function addMessageToChat(message, sender) {
+    const chatContainer = document.getElementById('chatContainer');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-bubble ${sender}-message`;
+    
+    if (sender === 'user') {
+        messageDiv.innerHTML = `
+            <div class="text-right">
+                <div class="font-semibold text-white mb-1">${currentUser}</div>
+                <div class="text-white">${message}</div>
+            </div>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm">🤖</span>
+                </div>
+                <div>
+                    <div class="font-semibold text-gray-800 mb-1">EduMentor Chatbot</div>
+                    <div class="text-gray-700">${message}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+// Enhanced Calendar and Study Planner Code - v3.0
+// More robust initialization and form handling
+
+(function() {
+    'use strict';
+    
+    // Initialize calendar-specific variables with error handling
+    if (!window.calendarData) {
+        window.calendarData = {
+            currentMonth: new Date().getMonth(),
+            currentYear: new Date().getFullYear(),
+            studyPlans: {},
+            initialized: false
+        };
+    }
+    
+    console.log('Calendar module loaded');
+})();
+
+// Enhanced storage functions with validation
+function loadCalendarStudyPlans() {
+    try {
+        // Ambil dari localStorage
+        const saved = localStorage.getItem('calendar_studyPlans');
+        if (saved) {
+            window.calendarData.studyPlans = JSON.parse(saved);
+        } else {
+            window.calendarData.studyPlans = {};
+        }
+        console.log('Calendar study plans loaded from localStorage:', window.calendarData.studyPlans);
+        return true;
+    } catch (error) {
+        console.error('Error loading calendar study plans:', error);
+        window.calendarData.studyPlans = {};
+        return false;
+    }
+}
+
+function saveCalendarStudyPlans() {
+    try {
+        // Simpan ke localStorage
+        localStorage.setItem('calendar_studyPlans', JSON.stringify(window.calendarData.studyPlans));
+        console.log('Calendar study plans saved to localStorage:', window.calendarData.studyPlans);
+        return true;
+    } catch (error) {
+        console.error('Error saving calendar study plans:', error);
+        return false;
+    }
+}
+
+// Enhanced utility functions
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const [y, m, d] = dateStr.split('-');
+        return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return dateStr;
+    }
+}
+
+function showCalendarNotification(message, type = 'success') {
+    try {
+        let notification = document.getElementById('calendarNotification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'calendarNotification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 12px;
+                z-index: 1000;
+                font-weight: 600;
+                box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            document.body.appendChild(notification);
+        }
+        
+        // Change color based on type
+        if (type === 'error') {
+            notification.style.background = 'linear-gradient(45deg, #ff6b6b, #ee5a52)';
+        } else if (type === 'warning') {
+            notification.style.background = 'linear-gradient(45deg, #ffc107, #fd7e14)';
+        } else {
+            notification.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+        }
+        
+        notification.textContent = message;
+        notification.style.transform = 'translateX(0)';
+        
+        setTimeout(() => { 
+            notification.style.transform = 'translateX(400px)'; 
+        }, 4000);
+        
+    } catch (error) {
+        console.error('Error showing notification:', error);
+        // Fallback to alert if notification fails
+        alert(message);
+    }
+}
+
+// Enhanced calendar generation with error handling
+function generateCalendar() {
+    try {
+        const calendarGrid = document.getElementById('calendarGrid');
+        const calendarMonth = document.getElementById('calendarMonth');
+        
+        if (!calendarGrid || !calendarMonth) {
+            console.warn('Calendar elements not found - deferring generation');
+            // Retry after a short delay
+            setTimeout(generateCalendar, 500);
+            return;
+        }
+        
+        const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        calendarMonth.textContent = `${monthNames[window.calendarData.currentMonth]} ${window.calendarData.currentYear}`;
+        
+        const firstDay = new Date(window.calendarData.currentYear, window.calendarData.currentMonth, 1).getDay();
+        const daysInMonth = new Date(window.calendarData.currentYear, window.calendarData.currentMonth + 1, 0).getDate();
+        
+        calendarGrid.innerHTML = '';
+        
+        // Add day headers
+        const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+        dayHeaders.forEach(day => {
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'calendar-day font-bold text-gray-600 text-center py-2';
+            headerDiv.textContent = day;
+            calendarGrid.appendChild(headerDiv);
+        });
+        
+        // Add empty cells for days before the first day
+        for (let i = 0; i < firstDay; i++) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'calendar-day';
+            calendarGrid.appendChild(emptyDiv);
+        }
+        
+        // Add days of the month
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${window.calendarData.currentYear}-${String(window.calendarData.currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day text-center py-3 rounded-lg transition-colors cursor-pointer hover:bg-gray-100';
+            
+            // Check if there's a study plan for this date
+            let topicLabel = '';
+            if (window.calendarData.studyPlans && window.calendarData.studyPlans[dateStr]) {
+                const plan = window.calendarData.studyPlans[dateStr];
+                dayDiv.style.background = 'linear-gradient(45deg, #ffc107, #fd7e14)';
+                dayDiv.style.color = 'white';
+                dayDiv.style.fontWeight = 'bold';
                 
-                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
-                let progressRaw = (totalTime / targetTime) * 100;
-                let milestone = 0;
-                
-                if (progressRaw >= 75) milestone = 75;
-                else if (progressRaw >= 50) milestone = 50;
-                else if (progressRaw >= 25) milestone = 25;
-                
-                if (milestone === 0) {
+                // Show topic label if it exists and is valid
+                if (plan.priority && plan.priority.trim() !== '' && plan.priority !== 'undefined') {
+                    topicLabel = `<div class='text-xs mb-1 font-semibold' style='color:#fff;text-shadow:0 1px 2px #fd7e14;'>${plan.priority}</div>`;
+                }
+            }
+            
+            // Add click event listener with error handling
+            dayDiv.addEventListener('click', (e) => {
+                e.preventDefault();
+                showCalendarPlanDetailModal(dateStr);
+            });
+            
+            // Highlight today
+            if (window.calendarData.currentYear === today.getFullYear() && 
+                window.calendarData.currentMonth === today.getMonth() && 
+                day === today.getDate()) {
+                dayDiv.classList.add('bg-blue-200', 'font-bold');
+            }
+            
+            dayDiv.innerHTML = `${topicLabel}<div>${day}</div>`;
+            calendarGrid.appendChild(dayDiv);
+        }
+        
+        // Update nearest plans list
+        renderNearestPlans();
+        
+        console.log('Calendar generated successfully');
+        
+    } catch (error) {
+        console.error('Error generating calendar:', error);
+        showCalendarNotification('Gagal memuat kalender', 'error');
+    }
+}
+
+// Enhanced month navigation
+function changeMonth(direction) {
+    try {
+        window.calendarData.currentMonth += direction;
+        if (window.calendarData.currentMonth > 11) {
+            window.calendarData.currentMonth = 0;
+            window.calendarData.currentYear++;
+        } else if (window.calendarData.currentMonth < 0) {
+            window.calendarData.currentMonth = 11;
+            window.calendarData.currentYear--;
+        }
+        generateCalendar();
+    } catch (error) {
+        console.error('Error changing month:', error);
+        showCalendarNotification('Gagal mengganti bulan', 'error');
+    }
+}
+
+// Enhanced dropdown update functions
+function updatePlannerSubjectOptions() {
+    try {
+        const select = document.getElementById('planSubject');
+        if (!select) {
+            console.warn('planSubject element not found');
+            return false;
+        }
+        
+        select.innerHTML = '';
+        
+        // Add default option
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Pilih Mata Pelajaran';
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        select.appendChild(defaultOpt);
+        
+        // Check main studyData from timer system
+        const mainStudyData = window.studyData || { subjects: [] };
+        
+        if (!mainStudyData.subjects || mainStudyData.subjects.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.disabled = true;
+            opt.textContent = 'Belum ada topik, silakan tambah topik baru';
+            select.appendChild(opt);
+            console.log('No subjects found in studyData');
+            return false;
+        }
+        
+        // Use subjects from main studyData
+        mainStudyData.subjects.forEach(subject => {
+            if (subject && subject.name) {
+                const opt = document.createElement('option');
+                opt.value = subject.name;
+                opt.textContent = subject.name;
+                select.appendChild(opt);
+            }
+        });
+        
+        console.log(`Updated subject options: ${mainStudyData.subjects.length} subjects`);
+        return true;
+        
+    } catch (error) {
+        console.error('Error updating subject options:', error);
+        return false;
+    }
+}
+
+function updatePlannerTimeOptions() {
+    try {
+        const select = document.getElementById('planTime');
+        if (!select) {
+            console.warn('planTime element not found');
+            return false;
+        }
+        
+        select.innerHTML = '';
+        
+        // Add default option
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Pilih Durasi Belajar';
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        select.appendChild(defaultOpt);
+        
+        const options = [
+            { value: '1–2 jam', label: '1–2 jam' },
+            { value: '2–3 jam', label: '2–3 jam' },
+            { value: '3–4 jam', label: '3–4 jam' },
+            { value: '4–5 jam', label: '4–5 jam' },
+            { value: '5+ jam', label: '5+ jam' }
+        ];
+        
+        options.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt.value;
+            o.textContent = opt.label;
+            select.appendChild(o);
+        });
+        
+        console.log('Updated time options successfully');
+        return true;
+        
+    } catch (error) {
+        console.error('Error updating time options:', error);
+        return false;
+    }
+}
+
+// Enhanced form validation
+function validateFormData(formData) {
+    const errors = [];
+    
+    const date = formData.get('planDate');
+    const studyTime = formData.get('planTime');
+    const learningStyle = formData.get('planStyle');
+    const priority = formData.get('planSubject');
+    const description = formData.get('planDesc');
+    
+    if (!date || date.trim() === '') {
+        errors.push('Tanggal harus diisi');
+    }
+    
+    if (!studyTime || studyTime.trim() === '') {
+        errors.push('Durasi belajar harus dipilih');
+    }
+    
+    if (!learningStyle || learningStyle.trim() === '') {
+        errors.push('Gaya belajar harus dipilih');
+    }
+    
+    if (!priority || priority.trim() === '') {
+        errors.push('Mata pelajaran harus dipilih');
+    }
+    
+    if (!description || description.trim() === '') {
+        errors.push('Deskripsi harus diisi');
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors,
+        data: { date, studyTime, learningStyle, priority, description }
+    };
+}
+
+// Enhanced form submission handler
+function setupFormEventListener() {
+    try {
+        const form = document.getElementById('aiStudyPlanForm');
+        if (!form) {
+            console.warn('Form aiStudyPlanForm not found - retrying...');
+            setTimeout(setupFormEventListener, 1000);
+            return false;
+        }
+        // Remove any existing event listeners
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        // Add new event listener
+        newForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Form submitted - processing...');
+            try {
+                const formData = new FormData(newForm);
+                const validation = validateFormData(formData);
+                if (!validation.isValid) {
+                    showCalendarNotification(validation.errors.join(', '), 'error');
+                    return;
+                }
+                const { date, studyTime, learningStyle, priority, description } = validation.data;
+                // Simpan ke calendarData.studyPlans
+                window.calendarData.studyPlans[date] = {
+                    studyTime,
+                    learningStyle,
+                    priority,
+                    description: description.trim()
+                };
+                // Simpan ke localStorage
+                if (saveCalendarStudyPlans()) {
+                    showCalendarNotification('Rencana belajar berhasil disimpan!');
+                    newForm.reset();
+                    generateCalendar();
+                } else {
+                    showCalendarNotification('Gagal menyimpan rencana', 'error');
+                }
+            } catch (error) {
+                console.error('Error processing form submission:', error);
+                showCalendarNotification('Terjadi kesalahan saat menyimpan!', 'error');
+            }
+        });
+        console.log('Form event listener set up successfully');
+        return true;
+    } catch (error) {
+        console.error('Error setting up form event listener:', error);
+        return false;
+    }
+}
+
+// Enhanced initialization function
+function initializeStudyPlanner() {
+    try {
+        console.log('Initializing study planner...');
+        
+        // Prevent multiple initializations
+        if (window.calendarData.initialized) {
+            console.log('Study planner already initialized');
+            return;
+        }
+        
+        // Load calendar data
+        loadCalendarStudyPlans();
+        
+        // Update dropdown options with retry logic
+        const updateOptions = () => {
+            const subjectSuccess = updatePlannerSubjectOptions();
+            const timeSuccess = updatePlannerTimeOptions();
+            
+            if (!subjectSuccess || !timeSuccess) {
+                console.log('Retrying option updates...');
+                setTimeout(updateOptions, 1000);
+                return;
+            }
+            
+            console.log('Dropdown options updated successfully');
+        };
+        
+        updateOptions();
+        
+        // Set up form event listener
+        setupFormEventListener();
+        
+        // Generate initial calendar
+        generateCalendar();
+        
+        // Mark as initialized
+        window.calendarData.initialized = true;
+        
+        console.log('Study planner initialized successfully');
+        
+    } catch (error) {
+        console.error('Error initializing study planner:', error);
+        showCalendarNotification('Gagal menginisialisasi planner', 'error');
+    }
+}
+
+// Enhanced modal functions
+function showCalendarPlanDetailModal(dateStr) {
+    try {
+        let modal = document.getElementById('calendarPlanDetailModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'calendarPlanDetailModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        const plan = window.calendarData.studyPlans[dateStr];
+        const today = new Date();
+        const selectedDate = new Date(dateStr);
+        const isToday = selectedDate.toDateString() === today.toDateString();
+        
+        if (plan) {
+            // Modal for date with existing plan
+            modal.innerHTML = `
+                <div class="modal-content" style="background:linear-gradient(135deg,#f3e7fa 60%,#e3eeff 100%);border-radius:20px;padding:28px 18px;max-width:420px;width:95%;box-shadow:0 8px 32px rgba(102,126,234,0.18);max-height:80vh;overflow-y:auto;">
+                    <h3 class="text-xl font-bold mb-2">Study Plan<br><span class="text-purple-600 text-base">${formatDate(dateStr)}</span></h3>
+                    <div class="glass-card p-4 rounded-xl mb-3" style="background:linear-gradient(135deg,#a18cd1 60%,#fbc2eb 100%);border-radius:18px;">
+                        <div class="mb-1"><span class="font-semibold">⏳ Waktu Belajar:</span> ${plan.studyTime}</div>
+                        <div class="mb-1"><span class="font-semibold">🧠 Gaya Belajar:</span> ${plan.learningStyle ? plan.learningStyle.charAt(0).toUpperCase() + plan.learningStyle.slice(1) : 'N/A'}</div>
+                        <div class="mb-1"><span class="font-semibold">🎯 Prioritas:</span> ${plan.priority}</div>
+                        <div class="mb-1"><span class="font-semibold">✍️ Deskripsi:</span> ${plan.description}</div>
+                        <div class="flex gap-2 mt-2">
+                            <button class="btn-primary" style="padding:4px 12px;font-size:13px;" onclick="editCalendarStudyPlan('${dateStr}')">🛠️ Edit</button>
+                            <button class="delete-btn" style="padding:4px 12px;font-size:13px;" onclick="deleteCalendarStudyPlan('${dateStr}')">🗑️ Hapus</button>
+                            <button class="btn-primary" style="padding:4px 12px;font-size:13px;" onclick="continueCalendarStudy('${plan.priority}')">▶️ Lanjutkan</button>
+                        </div>
+                    </div>
+                    <button class="btn-primary w-full mt-4" onclick="closeCalendarModal()">Tutup</button>
+                </div>
+            `;
+        } else {
+            // Modal for empty date
+            const dayLabel = isToday ? 'Hari Ini' : formatDate(dateStr);
+            const emptyMessage = isToday ? 
+                'Belum ada rencana belajar untuk hari ini. Yuk buat rencana belajar!' : 
+                'Belum ada rencana belajar untuk tanggal ini.';
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="background:linear-gradient(135deg,#f8f9fa 60%,#e9ecef 100%);border-radius:20px;padding:28px 18px;max-width:420px;width:95%;box-shadow:0 8px 32px rgba(102,126,234,0.18);max-height:80vh;overflow-y:auto;">
+                    <h3 class="text-xl font-bold mb-2">Study Plan<br><span class="text-gray-600 text-base">${dayLabel}</span></h3>
+                    <div class="glass-card p-4 rounded-xl mb-3" style="background:linear-gradient(135deg,#f1f3f4 60%,#e8eaed 100%);border-radius:18px;text-align:center;">
+                        <div class="text-6xl mb-3">📅</div>
+                        <div class="text-gray-600 font-semibold mb-2">${emptyMessage}</div>
+                        ${isToday ? '<div class="text-sm text-gray-500">Klik tombol "Buat Rencana" untuk mulai merencanakan hari ini!</div>' : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-primary flex-1" onclick="createNewCalendarPlan('${dateStr}')">📝 Buat Rencana</button>
+                        <button class="btn-primary flex-1" onclick="closeCalendarModal()">Tutup</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Close modal when clicking outside
+        modal.onclick = function(e) {
+            if (e.target === modal) closeCalendarModal();
+        };
+        
+        // Show modal
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+        
+    } catch (error) {
+        console.error('Error showing modal:', error);
+        showCalendarNotification('Gagal menampilkan detail', 'error');
+    }
+}
+
+function closeCalendarModal() {
+    try {
+        const modal = document.getElementById('calendarPlanDetailModal');
+        if (modal) {
+            modal.style.opacity = '0';
+            modal.style.visibility = 'hidden';
+            setTimeout(() => { 
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            }, 300);
+        }
+    } catch (error) {
+        console.error('Error closing modal:', error);
+    }
+}
+
+function editCalendarStudyPlan(dateStr) {
+    try {
+        const plan = window.calendarData.studyPlans[dateStr];
+        if (!plan) {
+            showCalendarNotification('Rencana tidak ditemukan', 'error');
+            return;
+        }
+        
+        const form = document.getElementById('aiStudyPlanForm');
+        if (!form) {
+            showCalendarNotification('Form tidak ditemukan', 'error');
+            return;
+        }
+        
+        // Fill form with existing data
+        const elements = form.elements;
+        if (elements.planDate) elements.planDate.value = dateStr;
+        if (elements.planTime) elements.planTime.value = plan.studyTime || '';
+        if (elements.planStyle) elements.planStyle.value = plan.learningStyle || '';
+        if (elements.planSubject) elements.planSubject.value = plan.priority || '';
+        if (elements.planDesc) elements.planDesc.value = plan.description || '';
+        
+        // Remove old plan
+        delete window.calendarData.studyPlans[dateStr];
+        saveCalendarStudyPlans();
+        
+        closeCalendarModal();
+        showCalendarNotification('Silakan edit rencana dan simpan untuk update.');
+        
+        // Scroll to form
+        form.scrollIntoView({ behavior: 'smooth' });
+        
+        generateCalendar();
+        
+    } catch (error) {
+        console.error('Error editing plan:', error);
+        showCalendarNotification('Gagal mengedit rencana', 'error');
+    }
+}
+
+function deleteCalendarStudyPlan(dateStr) {
+    try {
+        if (!window.calendarData.studyPlans[dateStr]) {
+            showCalendarNotification('Rencana tidak ditemukan', 'error');
+            return;
+        }
+        
+        if (confirm('Yakin ingin menghapus rencana belajar ini?')) {
+            delete window.calendarData.studyPlans[dateStr];
+            saveCalendarStudyPlans();
+            closeCalendarModal();
+            showCalendarNotification('Rencana berhasil dihapus!');
+            generateCalendar();
+        }
+        
+    } catch (error) {
+        console.error('Error deleting plan:', error);
+        showCalendarNotification('Gagal menghapus rencana', 'error');
+    }
+}
+
+function createNewCalendarPlan(dateStr) {
+    try {
+        const form = document.getElementById('aiStudyPlanForm');
+        if (!form) {
+            showCalendarNotification('Form tidak ditemukan', 'error');
+            return;
+        }
+        
+        // Set date in form
+        const dateInput = form.elements.planDate;
+        if (dateInput) {
+            dateInput.value = dateStr;
+        }
+        
+        // Close modal
+        closeCalendarModal();
+        
+        // Scroll to form
+        form.scrollIntoView({ behavior: 'smooth' });
+        
+        // Focus on first field after date
+        setTimeout(() => {
+            const timeField = document.getElementById('planTime');
+            if (timeField) {
+                timeField.focus();
+            }
+        }, 500);
+        
+        showCalendarNotification('Silakan lengkapi form untuk membuat rencana belajar!');
+        
+    } catch (error) {
+        console.error('Error creating new plan:', error);
+        showCalendarNotification('Gagal membuat rencana baru', 'error');
+    }
+}
+
+// Enhanced continue study function
+function continueCalendarStudy(subjectName) {
+    try {
+        console.log('Continuing study for subject:', subjectName);
+        
+        // Check if subject exists in main studyData
+        const mainStudyData = window.studyData || { subjects: [] };
+        const subjectIndex = mainStudyData.subjects.findIndex(s => s.name === subjectName);
+        
+        if (subjectIndex === -1) {
+            showCalendarNotification('Topik tidak ditemukan dalam daftar pembelajaran!', 'error');
+            return;
+        }
+        
+        // Close modal first
+        closeCalendarModal();
+        
+        // Try different methods to set active subject
+        if (typeof window.setActiveSubject === 'function') {
+            window.setActiveSubject(subjectIndex);
+            showCalendarNotification(`Fokus belajar pada: ${subjectName}`);
+        } else if (typeof window.switchToSubject === 'function') {
+            window.switchToSubject(subjectIndex);
+            showCalendarNotification(`Fokus belajar pada: ${subjectName}`);
+        } else if (window.lastContinuedSubjectName !== undefined) {
+            // Fallback to old method
+            window.lastContinuedSubjectName = subjectName;
+            window.lastContinuedSubjectIndex = subjectIndex;
+            
+            if (typeof updateActiveSubjectName === 'function') {
+                updateActiveSubjectName();
+            }
+            
+            showCalendarNotification(`Fokus belajar pada: ${subjectName}`);
+        } else {
+            showCalendarNotification('Sistem timer tidak ditemukan. Silakan mulai dari halaman utama.', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Error continuing study:', error);
+        showCalendarNotification('Gagal melanjutkan pembelajaran', 'error');
+    }
+}
+
+// Enhanced nearest plans rendering
+function renderNearestPlans() {
+    try {
+        const listDiv = document.getElementById('nearestPlansList');
+        if (!listDiv) return;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Get all plans, filter upcoming ones, sort by nearest date
+        const plansArr = Object.entries(window.calendarData.studyPlans)
+            .map(([date, plan]) => ({ date, ...plan }))
+            .filter(plan => new Date(plan.date) >= today)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        listDiv.innerHTML = '';
+        
+        if (plansArr.length === 0) {
+            listDiv.innerHTML = '<div class="text-gray-500 text-center py-4">Belum ada rencana belajar mendatang.</div>';
+            return;
+        }
+        
+        plansArr.slice(0, 5).forEach(plan => {
+            const div = document.createElement('div');
+            div.className = 'p-4 rounded-xl glass-card hover:shadow-lg transition-shadow cursor-pointer';
+            div.onclick = () => showCalendarPlanDetailModal(plan.date);
+            
+            const learningStyleDisplay = plan.learningStyle ? 
+                plan.learningStyle.charAt(0).toUpperCase() + plan.learningStyle.slice(1) : 
+                'N/A';
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-purple-600 font-bold">${formatDate(plan.date)}</span>
+                    <span class="text-xs bg-yellow-200 text-yellow-800 rounded px-2 py-1">${plan.studyTime}</span>
+                </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xs bg-blue-100 text-blue-800 rounded px-2 py-1">${learningStyleDisplay}</span>
+                </div>
+                <div class="font-semibold text-gray-800 mb-1">🎯 ${plan.priority}</div>
+                <div class="text-gray-700 text-sm">${plan.description}</div>
+            `;
+            
+            listDiv.appendChild(div);
+        });
+        
+    } catch (error) {
+        console.error('Error rendering nearest plans:', error);
+    }
+}
+
+// Enhanced update function
+function updateStudyPlanner() {
+    try {
+        console.log('Updating study planner...');
+        updatePlannerSubjectOptions();
+        updatePlannerTimeOptions();
+        generateCalendar();
+    } catch (error) {
+        console.error('Error updating study planner:', error);
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStudyPlanner();
+});
+
+// Make functions globally available
+window.changeMonth = changeMonth;
+window.editStudyPlan = editStudyPlan;
+window.deleteStudyPlan = deleteStudyPlan;
+window.showPlanDetailModal = showPlanDetailModal;
+window.closeModal = closeModal;
+window.createNewPlan = createNewPlan;
+window.updateStudyPlanner = updateStudyPlanner;
+window.loadStudyPlans = loadStudyPlans;
+window.saveStudyPlans = saveStudyPlans;
+
+// Fungsi untuk toggle centang subject
+function toggleSelectSubject(index) {
+    if (!window.selectedSubjectIndexes) window.selectedSubjectIndexes = [];
+    const idx = window.selectedSubjectIndexes.indexOf(index);
+    if (idx === -1) {
+        window.selectedSubjectIndexes.push(index);
+    } else {
+        window.selectedSubjectIndexes.splice(idx, 1);
+    }
+    updateTodaySchedule();
+}
+window.toggleSelectSubject = toggleSelectSubject;
+
+// Fungsi untuk hapus semua subject yang dicentang
+function deleteSelectedSubjects() {
+    if (!window.selectedSubjectIndexes || window.selectedSubjectIndexes.length === 0) return;
+    Swal.fire({
+        title: `Hapus ${window.selectedSubjectIndexes.length} topik terpilih?`,
+        text: 'Data yang dihapus tidak dapat dikembalikan!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Hapus dari studyData.subjects berdasarkan index
+            // Urutkan index dari besar ke kecil agar splice tidak menggeser
+            window.selectedSubjectIndexes.sort((a, b) => b - a).forEach(idx => {
+                studyData.subjects.splice(idx, 1);
+            });
+            window.selectedSubjectIndexes = [];
+            saveUserData();
+            updateDashboard();
+            showNotification('Topik terpilih berhasil dihapus!');
+        }
+    });
+}
+window.deleteSelectedSubjects = deleteSelectedSubjects;
+
+// Fungsi untuk reset progress semua subject yang dicentang
+function resetSelectedSubjects() {
+    if (!window.selectedSubjectIndexes || window.selectedSubjectIndexes.length === 0) return;
+    Swal.fire({
+        title: `Reset progress ${window.selectedSubjectIndexes.length} topik?`,
+        text: 'Progress akan direset ke 0%.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, reset!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.selectedSubjectIndexes.forEach(idx => {
+                const subject = studyData.subjects[idx];
+                if (subject) {
                     subject.totalTime = 0;
                     subject.runningTimerElapsed = 0;
                     subject.progress = 0;
                     subject.completed = false;
-                } else {
-                    subject.totalTime = (milestone / 100) * targetTime;
-                    subject.runningTimerElapsed = 0;
-                    subject.progress = milestone;
-                    subject.completed = (milestone === 100);
+                    subject.lastMilestone = 0;
+                    subject._milestoneNotified = {};
                 }
-            }
-            
-            // Reset labels
-            window.lastContinuedSubjectName = null;
-            window.lastContinuedSubjectIndex = null;
-            updateActiveSubjectName();
+            });
             saveUserData();
             updateDashboard();
+            showNotification('Progress topik terpilih berhasil direset!');
         }
-        
-        function updateSubjectProgress(elapsedMinutes) {
-            if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
-                const subject = studyData.subjects[window.lastContinuedSubjectIndex];
-                let targetTime = parseFloat(subject.targetTime);
-                if (!targetTime || isNaN(targetTime)) targetTime = 25;
-                
-                // Update running timer elapsed
-                subject.runningTimerElapsed = elapsedMinutes;
-                
-                // Calculate progress
-                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
-                let progressRaw = (totalTime / targetTime) * 100;
-                let progress = Math.floor(progressRaw);
-                if (progress > 100) progress = 100;
-                if (progress < 0 || isNaN(progress)) progress = 0;
-                
-                // Milestone logic
-                const milestones = [25, 50, 75, 100];
-                let milestoneReached = subject.lastMilestone || 0;
-                
-                for (let i = 0; i < milestones.length; i++) {
-                    if (progress >= milestones[i] && milestoneReached < milestones[i]) {
-                        milestoneReached = milestones[i];
-                        subject.lastMilestone = milestoneReached;
-                        saveUserData();
-                        showNotification(`Selamat! Anda telah mencapai ${milestoneReached}% dari target! 🎉`);
-                        
-                        if (milestoneReached === 100) {
-                            bellAudio.play();
-                        }
-                        break;
-                    }
-                }
-                
-                // Ensure progress doesn't go below lastMilestone
-                if (progress < subject.lastMilestone) {
-                    progress = subject.lastMilestone;
-                }
-                
-                subject.progress = progress;
-                subject.completed = (progress === 100);
-                
-                // Auto-pause if completed
-                if (subject.completed) {
-                    robustTimer.stop();
-                    document.getElementById('timerBtn').style.display = 'block';
-                    document.getElementById('timerSelect').disabled = false;
-                }
-                
-                // Update DOM
-                updateDOMProgress(subject.name, progress);
-                saveUserData();
-            }
+    });
+}
+window.resetSelectedSubjects = resetSelectedSubjects;
+
+// --- Redefinisi continueStudy agar langsung start timer setelah pilih subject ---
+function continueStudy(subjectName) {
+    // Cari index subject berdasarkan nama
+    const index = studyData.subjects.findIndex(s => s.name === subjectName);
+    if (index !== -1) {
+        window.lastContinuedSubjectName = subjectName;
+        window.lastContinuedSubjectIndex = index;
+        updateActiveSubjectName();
+        showNotification(`Fokus belajar pada: ${subjectName}`);
+        // Otomatis mulai timer jika belum berjalan
+        if (!robustTimer.isRunning) {
+            startTimer();
         }
-        
-        function updateDOMProgress(subjectName, progress) {
-            const scheduleContainer = document.getElementById('todaySchedule');
-            if (scheduleContainer && window.lastContinuedSubjectName) {
-                const card = scheduleContainer.querySelector(`.learning-path-item[data-subject-name="${window.lastContinuedSubjectName}"]`);
-                if (card) {
-                    const percentEl = card.querySelector('.text-2xl.font-bold.text-purple-600');
-                    if (percentEl) percentEl.textContent = progress + '%';
-                    
-                    const barEl = card.querySelector('.h-full.bg-purple-600.rounded-full');
-                    if (barEl) barEl.style.width = progress + '%';
-                    
-                    if (progress === 100) card.classList.add('completed');
-                    else card.classList.remove('completed');
-                }
-            }
-        }
-        
-        function changeTimerDuration() {
-            const newDuration = parseInt(document.getElementById('timerSelect').value);
-            document.getElementById('timerDisplay').textContent = `${newDuration.toString().padStart(2, '0')}:00`;
-        }
-        
-        // Enhanced Page Visibility API for better handling
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                // Tab became inactive - timer continues running automatically
-                console.log('Tab inactive - timer continues in background');
-            } else {
-                // Tab became active - force display update
-                console.log('Tab active - syncing timer display');
-                if (robustTimer.isRunning) {
-                    robustTimer.updateDisplay();
-                }
-            }
+    } else {
+        showNotification('Topik tidak ditemukan!', 'error');
+    }
+}
+window.continueStudy = continueStudy;
+
+// --- Pastikan resetSubjectFromSchedule juga global jika dipakai di HTML ---
+if (typeof resetSubjectFromSchedule === 'function') {
+    window.resetSubjectFromSchedule = resetSubjectFromSchedule;
+}
+
+// --- Perbaiki initializeEventListeners agar tidak error jika elemen tidak ada ---
+if (typeof EnhancedInternTrack === 'function') {
+    EnhancedInternTrack.prototype.initializeEventListeners = function() {
+        const logForm = document.getElementById('logForm');
+        if (logForm) logForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addLog();
         });
-        
-        // Additional recovery mechanism on focus
-        window.addEventListener('focus', function() {
-            if (robustTimer.isRunning) {
-                robustTimer.updateDisplay();
-            }
+        const editForm = document.getElementById('editForm');
+        if (editForm) editForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveEdit();
         });
-        
-        // Periodic sync every 5 seconds as backup
-        setInterval(() => {
-            if (robustTimer.isRunning) {
-                robustTimer.updateDisplay();
-            }
-        }, 5000);
-
-        function addMessageToChat(message, sender) {
-            const chatContainer = document.getElementById('chatContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-bubble ${sender}-message`;
-            
-            if (sender === 'user') {
-                messageDiv.innerHTML = `
-                    <div class="text-right">
-                        <div class="font-semibold text-white mb-1">${currentUser}</div>
-                        <div class="text-white">${message}</div>
-                    </div>
-                `;
-            } else {
-                messageDiv.innerHTML = `
-                    <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <span class="text-white text-sm">🤖</span>
-                        </div>
-                        <div>
-                            <div class="font-semibold text-gray-800 mb-1">EduMentor Chatbot</div>
-                            <div class="text-gray-700">${message}</div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        // Calendar functions
-        function generateCalendar() {
-            const calendarGrid = document.getElementById('calendarGrid');
-            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            
-            document.getElementById('calendarMonth').textContent = `${monthNames[currentMonth]} ${currentYear}`;
-            
-            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            
-            calendarGrid.innerHTML = '';
-            
-            // Day headers
-            const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-            dayHeaders.forEach(day => {
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'calendar-day font-bold text-gray-600';
-                headerDiv.textContent = day;
-                calendarGrid.appendChild(headerDiv);
-            });
-            
-            // Empty days
-            for (let i = 0; i < firstDay; i++) {
-                const emptyDiv = document.createElement('div');
-                emptyDiv.className = 'calendar-day';
-                calendarGrid.appendChild(emptyDiv);
-            }
-            
-            // Days of month
-            const today = new Date();
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'calendar-day';
-                dayDiv.textContent = day;
-                
-                if (currentYear === today.getFullYear() && 
-                    currentMonth === today.getMonth() && 
-                    day === today.getDate()) {
-                    dayDiv.classList.add('today');
-                }
-                
-                // Random study sessions for demo
-                if (Math.random() > 0.7) {
-                    dayDiv.classList.add('has-session');
-                }
-                
-                calendarGrid.appendChild(dayDiv);
-            }
-        }
-
-        function changeMonth(direction) {
-            currentMonth += direction;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            } else if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            generateCalendar();
-        }
-
-        // Learning path functions
-        function updateLearningPath() {
-            const learningPathContainer = document.getElementById('learningPaths');
-            learningPathContainer.innerHTML = '';
-            
-            studyData.subjects.forEach((subject, index) => {
-                const pathItem = document.createElement('div');
-                pathItem.className = 'learning-path-item p-6 mb-6';
-                if (subject.completed) pathItem.classList.add('completed');
-                else if (index === 0) pathItem.classList.add('current');
-                
-                pathItem.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <h4 class="text-xl font-bold text-gray-800 mb-2">${subject.name}</h4>
-                            <p class="text-gray-600 mb-4">${subject.description}</p>
-                            <div class="flex items-center space-x-4 mb-4">
-                                <span class="skill-badge">${subject.difficulty}</span>
-                                <span class="text-sm text-gray-500">${subject.totalTime} menit belajar</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-purple-600 h-3 rounded-full transition-all duration-300" 
-                                     style="width: ${subject.progress}%"></div>
-                            </div>
-                        </div>
-                        <div class="text-right ml-6">
-                            <div class="text-3xl font-bold text-purple-600">${subject.progress}%</div>
-                            <button class="btn-primary mt-4" onclick="continueStudy('${subject.name}')">
-                                Lanjutkan
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                learningPathContainer.appendChild(pathItem);
-            });
-        }
-
-        function continueStudy(subjectName) {
-            const subjectIndex = studyData.subjects.findIndex(s => s.name === subjectName);
-            if (subjectIndex !== -1) {
-                window.lastContinuedSubjectName = subjectName;
-                window.lastContinuedSubjectIndex = subjectIndex;
-                const subject = studyData.subjects[subjectIndex];
-                // Selalu gunakan timer default 25 menit setiap mulai sesi
-                timerMinutes = 25;
-                timerSeconds = 0;
-                document.getElementById('timerDisplay').textContent = `25:00`;
-                document.getElementById('timerSelect').disabled = true;
-                if (!isTimerRunning) startTimer();
-                saveUserData();
-                updateDashboard();
-                updateActiveSubjectName();
-            }
-        }
-
-        // Study planner functions
-        function updateStudyPlanner() {
-            updatePrioritySubjects();
-            updateStudyGoals();
-        }
-
-        function updateStudyGoals() {
-            const goalsContainer = document.getElementById('studyGoals');
-            goalsContainer.innerHTML = '';
-            
-            if (studyData.goals.length === 0) {
-                studyData.goals = [
-                    { text: 'Selesaikan 2 jam belajar harian', completed: false },
-                    { text: 'Selesaikan kursus Matematika', completed: false },
-                    { text: 'Pelajari 5 konsep baru pemrograman', completed: false }
-                ];
-                saveUserData();
-            }
-            
-            studyData.goals.forEach((goal, index) => {
-                const goalDiv = document.createElement('div');
-                goalDiv.className = `p-3 rounded-lg border-2 ${goal.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`;
-                goalDiv.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="${goal.completed ? 'line-through text-gray-500' : 'text-gray-800'}">${goal.text}</span>
-                        <input type="checkbox" ${goal.completed ? 'checked' : ''} 
-                               onchange="toggleGoal(${index})" class="ml-2">
-                    </div>
-                `;
-                goalsContainer.appendChild(goalDiv);
-            });
-        }
-
-        function toggleGoal(index) {
-            studyData.goals[index].completed = !studyData.goals[index].completed;
-            saveUserData();
-            updateStudyGoals();
-        }
-
-        function addNewGoal() {
-            const goalText = prompt('Masukkan tujuan belajar Anda:');
-            if (goalText) {
-                studyData.goals.push({ text: goalText, completed: false });
-                saveUserData();
-                updateStudyGoals();
-                showNotification('Tujuan baru ditambahkan! 🎯');
-            }
-        }
-
-        function generateSchedule() {
-            const availableTime = document.getElementById('availableTime').value;
-            const learningStyle = document.getElementById('learningStyle').value;
-            const prioritySubject = document.getElementById('prioritySubject').value;
-            
-            showNotification('AI sedang menghasilkan jadwal optimal Anda... 🤖');
-            
-            // Simulate AI processing
-            setTimeout(() => {
-                showNotification('Jadwal berhasil dihasilkan! Periksa kalender Anda. 📅');
-                // In a real app, this would call the AI API to generate an actual schedule
-            }, 2000);
-        }
-
-        // Analytics functions
-        function updateAnalytics() {
-            updateProgressChart();
-            updateStudyTimeAnalytics();
-            updatePerformanceInsights();
-        }
-
-        function updateProgressChart() {
-            const chartContainer = document.getElementById('progressChart');
-            chartContainer.innerHTML = '';
-            
-            studyData.subjects.forEach(subject => {
-                const chartItem = document.createElement('div');
-                chartItem.className = 'mb-4';
-                chartItem.innerHTML = `                    <div class="flex justify-between items-center mb-2">
-                        <span class="font-semibold text-gray-800">${subject.name}</span>
-                        <span class="text-purple-600 font-bold">${subject.progress}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-4">
-                        <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-4 rounded-full transition-all duration-500" 
-                             style="width: ${subject.progress}%"></div>
-                    </div>
-                `;
-                chartContainer.appendChild(chartItem);
-            });
-        }
-
-        function updateStudyTimeAnalytics() {
-            const analyticsContainer = document.getElementById('studyTimeAnalytics');
-            analyticsContainer.innerHTML = '';
-            
-            const totalTime = studyData.studyTime;
-            const averageSession = totalTime > 0 ? Math.round(totalTime / 7) : 0;
-            
-            const analytics = [
-                { label: 'Waktu Belajar Total', value: `${Math.round(totalTime / 60)}h ${totalTime % 60}m`, color: 'blue' },
-                { label: 'Rata-rata Sesi', value: `${averageSession}m`, color: 'green' },
-                { label: 'Streak Belajar', value: `${studyData.streak} hari`, color: 'purple' },
-                { label: 'Aktivitas Belajar Selesai', value: studyData.subjects.filter(s => s.completed).length, color: 'orange' }
-            ];
-            
-            analytics.forEach(item => {
-                const analyticsItem = document.createElement('div');
-                analyticsItem.className = 'metric-card';
-                analyticsItem.innerHTML = `
-                    <div class="text-2xl font-bold text-${item.color}-600 mb-2">${item.value}</div>
-                    <div class="text-gray-600 text-sm">${item.label}</div>
-                `;
-                analyticsContainer.appendChild(analyticsItem);
-            });
-        }
-
-        function updatePerformanceInsights() {
-            const insightsContainer = document.getElementById('performanceInsights');
-            insightsContainer.innerHTML = '';
-            
-            const insights = [
-                {
-                    title: '📈 Kecepatan Belajar',
-                    content: 'Anda belajar 15% lebih cepat dari pembelajar rata-rata!',
-                    color: 'green'
-                },
-                {
-                    title: '🎯 Area Fokus',
-                    content: 'Pertimbangkan untuk menghabiskan lebih banyak waktu pada topik lanjutan.',
-                    color: 'blue'
-                },
-                {
-                    title: '⏰ Waktu Belajar Terbaik',
-                    content: 'Kinerja Anda puncak antara 9-11 pagi.',
-                    color: 'purple'
-                },
-                {
-                    title: '🏆 Potensi Penghargaan',
-                    content: 'Anda hanya 2 sesi lagi dari jadwal berikutnya!',
-                    color: 'orange'
-                }
-            ];
-            
-            insights.forEach(insight => {
-                const insightDiv = document.createElement('div');
-                insightDiv.className = 'glass-card p-6 rounded-2xl';
-                insightDiv.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-800 mb-3">${insight.title}</h4>
-                    <p class="text-gray-600">${insight.content}</p>
-                `;
-                insightsContainer.appendChild(insightDiv);
-            });
-        }
-
-        // AI Recommendations
-        async function loadAIRecommendations() {
-            const recommendationsContainer = document.getElementById('aiRecommendations');
-            recommendationsContainer.innerHTML = '<div class="loading-spinner"></div> Memuat rekomendasi...';
-            
-            try {
-                const userContext = `Pengguna: ${currentUser}, Aktivitas Belajar: ${studyData.subjects.map(s => s.name).join(', ')}, 
-                                   Waktu Belajar: ${studyData.studyTime}menit, Progres: ${studyData.subjects.map(s => s.progress).join(', ')}%`;
-                
-                const response = await callGeminiAPI(`Berikan 3 rekomendasi belajar pendek berdasarkan: ${userContext}`);
-                
-                // Parse the response and create recommendation items
-                const recommendations = response.split('\n').filter(line => line.trim()).slice(0, 3);
-                
-                recommendationsContainer.innerHTML = '';
-                recommendations.forEach(rec => {
-                    const recDiv = document.createElement('div');
-                    recDiv.className = 'p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400';
-                    recDiv.innerHTML = `<p class="text-blue-800 text-sm">${rec}</p>`;
-                    recommendationsContainer.appendChild(recDiv);
-                });
-            } catch (error) {
-                recommendationsContainer.innerHTML = `
-                    <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                        <p class="text-blue-800 text-sm">📚 Ulas kembali aktivitas belajar yang lemah Anda</p>
-                    </div>
-                    <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
-                        <p class="text-green-800 text-sm">⏰ Ambil break teratur setiap 25 menit</p>
-                    </div>
-                    <div class="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
-                        <p class="text-purple-800 text-sm">🎯 Tetapkan tujuan belajar harian spesifik</p>
-                    </div>
-                    <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                        <p class="text-orange-800 text-sm">✅ Centang aktivitas belajar yang ingin dihapus dan direset</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Utility functions
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notificationText');
-            
-            notificationText.textContent = message;
-            notification.className = `notification ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        function showProfile() {
-            // Ambil data belajar
-            const savedUser = localStorage.getItem('eduMentorUser') || 'Pengguna';
-            const savedData = localStorage.getItem(`eduMentorData_${savedUser}`);
-            let studyData = { subjects: [], studyTime: 0, streak: 0, goals: [] };
-            if (savedData) {
-                studyData = JSON.parse(savedData);
-            }
-            // Ambil data aktivitas
-            const logs = JSON.parse(localStorage.getItem('interntrack_logs')) || [];
-            // Hitung metrik
-            const totalTopics = studyData.subjects.length;
-            const completedCourses = studyData.subjects.filter(s => s.completed).length;
-            const totalActivities = logs.length;
-            const completedActivities = logs.filter(log => log.status === 'completed').length;
-
-            Swal.fire({
-                html: `
-                    <style>
-                        .profile-metrics-grid {
-                            display: grid;
-                            grid-template-columns: repeat(2, 1fr);
-                            gap: 18px;
-                            margin-bottom: 18px;
-                            text-align: center;
-                        }
-                        @media (max-width: 600px) {
-                            .profile-metrics-grid {
-                                grid-template-columns: 1fr;
-                            }
-                        }
-                        .profile-metric-card {
-                            background: #f7f8fa;
-                            border-radius: 16px;
-                            padding: 18px 8px 14px 8px;
-                            box-shadow: 0 2px 8px rgba(102,126,234,0.06);
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            min-width: 0;
-                        }
-                        .profile-metric-card .icon {
-                            font-size: 2.1rem;
-                            margin-bottom: 6px;
-                        }
-                        .profile-metric-card .value {
-                            font-size: 1.7rem;
-                            font-weight: 700;
-                            margin-bottom: 2px;
-                        }
-                        .profile-metric-card .desc {
-                            font-size: 1rem;
-                            font-weight: 500;
-                            color: #444;
-                        }
-                        .profile-metric-card.topik { color: #6366f1; background: #eef2ff; }
-                        .profile-metric-card.kursus { color: #22c55e; background: #e7f9ef; }
-                        .profile-metric-card.kegiatan { color: #ff6b6b; background: #fff1f1; }
-                        .profile-metric-card.selesai { color: #10b981; background: #e7f9ef; }
-                    </style>
-                    <div style="text-align:center">
-                        <div style="margin-bottom:16px;">
-                            <span style="display:inline-block;width:72px;height:72px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:auto;">
-                                <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="url(#userGradient)"/><defs><linearGradient id="userGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient></defs><path fill="#fff" d="M12 12c1.933 0 3.5-1.567 3.5-3.5S13.933 5 12 5s-3.5 1.567-3.5 3.5S10.067 12 12 12Zm0 1.5c-2.485 0-7.5 1.243-7.5 3.75V19h15v-1.75c0-2.507-5.015-3.75-7.5-3.75Z"/></svg>
-                            </span>
-                        </div>
-                        <div style="font-size:1.3rem;font-weight:700;margin-bottom:18px;color:#333;">${savedUser}</div>
-                        <div class="profile-metrics-grid">
-                            <div class="profile-metric-card topik">
-                                <div class="icon">📚</div>
-                                <div class="value">${totalTopics}</div>
-                                <div class="desc">Topik Belajar</div>
-                            </div>
-                            <div class="profile-metric-card kursus">
-                                <div class="icon">🏆</div>
-                                <div class="value">${completedCourses}</div>
-                                <div class="desc">Kursus Selesai</div>
-                            </div>
-                            <div class="profile-metric-card kegiatan">
-                                <div class="icon">📝</div>
-                                <div class="value">${totalActivities}</div>
-                                <div class="desc">Total Kegiatan</div>
-                            </div>
-                            <div class="profile-metric-card selesai">
-                                <div class="icon">✅</div>
-                                <div class="value">${completedActivities}</div>
-                                <div class="desc">Kegiatan Selesai</div>
-                            </div>
-                        </div>
-                        <button id='logoutBtn' style='margin-top:10px;width:100%;padding:12px 0;font-weight:700;font-size:1rem;border:none;border-radius:12px;background:linear-gradient(90deg,#667eea,#764ba2);color:white;box-shadow:0 2px 8px rgba(102,126,234,0.15);transition:background 0.3s;'>Logout / Hapus Data</button>
-                    </div>
-                `,
-                showConfirmButton: true,
-                confirmButtonText: 'Tutup',
-                didOpen: () => {
-                    document.getElementById('logoutBtn').onclick = function() {
-                        Swal.fire({
-                            title: 'Yakin ingin logout dan hapus semua data?',
-                            text: 'Semua data belajar dan kegiatan Anda akan dihapus dan aplikasi akan direset!',
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonText: 'Ya, Hapus!',
-                            cancelButtonText: 'Batal'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                if (savedUser) {
-                                    localStorage.removeItem('eduMentorUser');
-                                    localStorage.removeItem(`eduMentorData_${savedUser}`);
-                                }
-                                localStorage.removeItem('interntrack_logs');
-                                location.reload();
-                            }
-                        });
-                    };
+        const typeSelect = document.getElementById('type');
+        const projectField = document.getElementById('projectField');
+        if (typeSelect && projectField) {
+            typeSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'project') {
+                    projectField.classList.remove('hidden');
+                    document.getElementById('project').required = true;
+                } else {
+                    projectField.classList.add('hidden');
+                    document.getElementById('project').required = false;
+                    document.getElementById('project').value = '';
                 }
             });
         }
-
-        function updateActiveSubjectName() {
-            const el = document.getElementById('activeSubjectName');
-            if (!el) return;
-            if (window.lastContinuedSubjectName) {
-                el.textContent = `Sedang belajar: ${window.lastContinuedSubjectName}`;
-            } else {
-                el.textContent = 'Belum ada jadwal yang dipilih';
-            }
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const filter = e.target.getAttribute('data-filter');
+                this.setFilter(filter);
+            });
+        });
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', () => {
+                this.bulkDelete();
+            });
         }
-
-        // Fungsi toggle centang subject
-        function toggleSelectSubject(index) {
-            if (!window.selectedSubjectIndexes) window.selectedSubjectIndexes = [];
-            const idx = window.selectedSubjectIndexes.indexOf(index);
-            if (idx === -1) {
-                window.selectedSubjectIndexes.push(index);
-            } else {
-                window.selectedSubjectIndexes.splice(idx, 1);
-            }
-            updateTodaySchedule(); // update visibilitas tombol aksi
-        }
-
-        // Hapus subject terpilih
-        function deleteSelectedSubjects() {
-            if (!window.selectedSubjectIndexes || window.selectedSubjectIndexes.length === 0) {
-                showNotification('Pilih jadwal yang ingin dihapus!', 'error');
-                return;
-            }
-            Swal.fire({
-                title: 'Hapus Jadwal Terpilih?',
-                text: 'Yakin ingin menghapus semua jadwal terpilih?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.selectedSubjectIndexes.sort((a,b)=>b-a).forEach(idx => {
-                        studyData.subjects.splice(idx, 1);
-                    });
-                    window.selectedSubjectIndexes = [];
-                    saveUserData();
-                    updateDashboard();
-                    Swal.fire('Berhasil!','Jadwal terpilih berhasil dihapus!','success');
+        const logList = document.getElementById('logList');
+        if (logList) {
+            logList.addEventListener('change', (e) => {
+                if (e.target.classList.contains('log-checkbox')) {
+                    this.updateBulkDeleteBtn();
                 }
             });
         }
+        const dateInput = document.getElementById('date');
+        if (dateInput) dateInput.valueAsDate = new Date();
+    };
+}
 
-        // Reset subject terpilih
-        function resetSelectedSubjects() {
-            if (!window.selectedSubjectIndexes || window.selectedSubjectIndexes.length === 0) {
-                showNotification('Pilih jadwal yang ingin direset!', 'error');
-                return;
-            }
-            Swal.fire({
-                title: 'Reset Jadwal Terpilih?',
-                text: 'Yakin ingin mereset semua jadwal terpilih?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Reset!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.selectedSubjectIndexes.forEach(idx => {
-                        if (studyData.subjects[idx]) {
-                            studyData.subjects[idx].totalTime = 0;
-                            studyData.subjects[idx].progress = 0;
-                            studyData.subjects[idx].completed = false;
-                            studyData.subjects[idx].lastMilestone = 0;
-                            studyData.subjects[idx].runningTimerElapsed = 0; // Reset waktu berjalan
-                        }
-                    });
-                    saveUserData();
-                    updateDashboard();
-                    Swal.fire('Berhasil!','Jadwal terpilih berhasil direset!','success');
-                    // Reset timer belajar ke default
-                    timerMinutes = parseInt(document.getElementById('timerSelect').value) || 25;
-                    timerSeconds = 0;
-                    document.getElementById('timerDisplay').textContent = `${timerMinutes.toString().padStart(2, '0')}:00`;
-                    document.getElementById('timerSelect').disabled = false;
-                    document.getElementById('timerBtn').style.display = 'block'; // Tampilkan tombol Mulai kembali
-                    isTimerRunning = false;
-                    clearInterval(timerInterval);
-                    // Reset label subject aktif
-                    window.lastContinuedSubjectName = null;
-                    window.lastContinuedSubjectIndex = null;
-                    updateActiveSubjectName();
-                }
-            });
+function showProfile() {
+    const savedUser = localStorage.getItem('eduMentorUser') || 'Pengguna';
+    const savedData = localStorage.getItem(`eduMentorData_${savedUser}`);
+    let studyData = { subjects: [], studyTime: 0, streak: 0, goals: [] };
+    if (savedData) {
+        studyData = JSON.parse(savedData);
+    }
+
+    const logs = JSON.parse(localStorage.getItem('interntrack_logs')) || [];
+
+    const totalTopics = studyData.subjects.length;
+    const completedCourses = studyData.subjects.filter(s => s.completed).length;
+    const totalActivities = logs.length;
+    const completedActivities = logs.filter(log => log.status === 'completed').length;
+
+    Swal.fire({
+        html: `
+            <div class="flex flex-col items-center">
+                <div class="bg-gradient-to-br from-purple-600 to-indigo-500 w-[90px] h-[90px] rounded-full flex items-center justify-center mb-2">
+                    <svg width="48" height="48" fill="white" viewBox="0 0 24 24">
+                        <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/>
+                    </svg>
+                </div>
+                <div class="text-xl font-bold mb-4">${savedUser}</div>
+                <div class="grid grid-cols-2 gap-4 w-full max-w-sm mb-6">
+                    <div class="bg-green-50 rounded-2xl p-4 text-center">
+                        <div class="text-indigo-500 text-2xl mb-1">📚</div>
+                        <div class="text-lg font-semibold text-indigo-600">${totalTopics}</div>
+                        <div class="text-sm text-gray-600 mt-1">Topik Belajar</div>
+                    </div>
+                    <div class="bg-indigo-50 rounded-2xl p-4 text-center">
+                        <div class="text-emerald-500 text-2xl mb-1">🏆</div>
+                        <div class="text-lg font-semibold text-emerald-600">${completedCourses}</div>
+                        <div class="text-sm text-gray-600 mt-1">Kursus Selesai</div>
+                    </div>
+                    <div class="bg-indigo-50 rounded-2xl p-4 text-center">
+                        <div class="text-red-500 text-2xl mb-1">📋</div>
+                        <div class="text-lg font-semibold text-red-500">${totalActivities}</div>
+                        <div class="text-sm text-gray-600 mt-1">Total Kegiatan</div>
+                    </div>
+                    <div class="bg-green-50 rounded-2xl p-4 text-center">
+                        <div class="text-green-500 text-2xl mb-1">✅</div>
+                        <div class="text-lg font-semibold text-green-500">${completedActivities}</div>
+                        <div class="text-sm text-gray-600 mt-1">Kegiatan Selesai</div>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="bg-gradient-to-r from-purple-600 to-indigo-500 text-white py-3 px-6 rounded-xl font-semibold text-sm w-full max-w-sm">Logout / Hapus Data</button>
+            </div>
+        `,
+        showConfirmButton: true,
+        confirmButtonText: 'Tutup',
+        customClass: { popup: 'rounded-2xl' },
+        didOpen: () => {
+            document.getElementById('logoutBtn').onclick = function() {
+                localStorage.removeItem('eduMentorUser');
+                location.reload();
+            };
         }
+    });
+}
 
-        // FAQ Chatbot Data
-        const faqData = [
-            {
-                q: 'Bagaimana cara menambah aktivitas belajar?',
-                a: 'Klik tombol "+ Tambah Aktivitas belajar" di dashboard, isi data yang diperlukan, lalu klik "Tambah".'
-            },
-            {
-                q: 'Bagaimana cara mengatur timer belajar?',
-                a: 'Pilih durasi timer di dropdown pada panel Timer Belajar, lalu klik "Mulai" untuk memulai sesi.'
-            },
-            {
-                q: 'Bagaimana cara menghapus atau mereset aktivitas belajar?',
-                a: 'Centang aktivitas belajar yang ingin dihapus atau direset, lalu klik tombol "Hapus Terpilih" atau "Reset Terpilih".'
-            },
-            {
-                q: 'Apa itu progres belajar dan bagaimana cara meningkatkannya?',
-                a: 'Progres belajar adalah persentase waktu belajar terhadap target. Tingkatkan dengan menyelesaikan sesi belajar.'
-            },
-            {
-                q: 'Bagaimana cara menggunakan perencana belajar?',
-                a: 'Buka tab "Perencana Belajar", atur preferensi, lalu klik "Hasilkan Jadwal Optimal".'
-            },
-            {
-                q: 'Bagaimana cara menambah tujuan belajar?',
-                a: 'Di tab "Perencana Belajar", klik "+ Tambah Tujuan Baru" dan masukkan tujuan Anda.'
-            },
-            {
-                q: 'Bagaimana cara melanjutkan belajar pada aktivitas belajar tertentu?',
-                a: 'Klik tombol "Lanjutkan" pada aktivitas belajar yang ingin Anda pelajari di dashboard.'
-            },
-            {
-                q: 'Apa itu milestone dan bagaimana cara mencapainya?',
-                a: 'Milestone adalah pencapaian progres belajar (25%, 50%, 75%, 100%). Capai dengan menyelesaikan sesi belajar secara konsisten.'
-            },
-            {
-                q: 'Bagaimana cara mengoptimalkan waktu belajar?',
-                a: 'Gunakan teknik Pomodoro (25 menit fokus), istirahat teratur, dan fokus pada satu aktivitas belajar per sesi.'
-            },
-            {
-                q: 'Apa manfaat dari tracking progres belajar?',
-                a: 'Tracking progres membantu Anda melihat kemajuan, mengidentifikasi area yang perlu perbaikan, dan tetap termotivasi.'
-            },
-            {
-                q: 'Bagaimana cara mengatasi kebosanan saat belajar?',
-                a: 'Variasikan aktivitas belajar, gunakan timer untuk sesi pendek, dan tetapkan tujuan kecil yang mudah dicapai.'
-            },
-            {
-                q: 'Apa itu streak belajar dan bagaimana mempertahankannya?',
-                a: 'Streak adalah jumlah hari berturut-turut Anda belajar. Pertahankan dengan belajar minimal 1 sesi per hari.'
-            },
-            {
-                q: 'Bagaimana cara mengatur prioritas aktivitas belajar?',
-                a: 'Identifikasi aktivitas belajar yang paling sulit atau penting, lalu alokasikan lebih banyak waktu untuk itu.'
-            },
-            {
-                q: 'Apa tips untuk belajar yang efektif?',
-                a: 'Buat jadwal teratur, gunakan teknik active recall, review materi secara berkala, dan istirahat yang cukup.'
-            },
-            {
-                q: 'Bagaimana cara mengukur keberhasilan belajar?',
-                a: 'Lihat progres di dashboard, catat milestone yang dicapai, dan evaluasi pemahaman materi secara berkala.'
-            }
-        ];
-
-        // Render FAQ Questions
-        function renderFAQQuestions() {
-            const faqContainer = document.getElementById('faqQuestions');
-            faqContainer.innerHTML = '';
-            faqData.forEach((item, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-all text-left';
-                btn.onclick = function() { sendFAQMessage(item.q); };
-                btn.innerHTML = `<div class="font-semibold text-blue-800">${item.q}</div>`;
-                faqContainer.appendChild(btn);
-            });
-        }
-
-        // Chatbot send message (FAQ)
-        function sendFAQMessage(msg) {
-            let message = msg;
-            if (!message) return;
-            addMessageToChat(message, 'user');
-            // Cari jawaban
-            const found = faqData.find(item => item.q.toLowerCase() === message.toLowerCase());
-            let answer = found ? found.a : 'Maaf, pertanyaan tidak tersedia. Silakan pilih dari daftar.';
-            setTimeout(() => {
-                addMessageToChat(answer, 'ai');
-            }, 400);
-        }
-
-
-
-        // Pagination function for schedule
-        function changeSchedulePage(page) {
-            if (page < 1) return;
-            const totalPages = Math.ceil(studyData.subjects.length / 5);
-            if (page > totalPages) return;
-            window.currentSchedulePage = page;
-            updateTodaySchedule();
-        }
-
-        // Auto-save data every 30 seconds
-        setInterval(saveUserData, 30000);
-
-        function updateActiveSubjectProgress(subjectName, progress) {
-            // Fungsi ini sudah tidak diperlukan karena updateTimer sudah menangani update progress
-            // Hanya simpan data ke localStorage
-            if (window.lastContinuedSubjectName === subjectName) {
-                const subjectIndex = studyData.subjects.findIndex(s => s.name === subjectName);
-                if (subjectIndex !== -1) {
-                    studyData.subjects[subjectIndex].progress = progress;
-                    studyData.subjects[subjectIndex].completed = (progress === 100);
-                }
-            }
-        }
+window.showProfile = showProfile;
