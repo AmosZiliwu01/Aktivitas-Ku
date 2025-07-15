@@ -145,7 +145,7 @@ body {
 .delete-btn {
     background: linear-gradient(45deg, #ff4757, #ff6b7a);
     transition: all 0.3s ease;
-    padding: 12px 24px;
+    padding: 8px;
     border-radius: 12px;
     font-weight: 600;
     color: white;
@@ -153,7 +153,6 @@ body {
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
 }
 
 .delete-btn:hover {
@@ -165,7 +164,7 @@ body {
     background: linear-gradient(45deg, #2ecc71, #27ae60);
     transition: all 0.3s ease;
     padding: 8px;
-    border-radius: 50%;
+    border-radius: 12px;
     color: white;
     border: none;
     cursor: pointer;
@@ -183,7 +182,7 @@ body {
     background: linear-gradient(45deg, #f39c12, #e67e22);
     transition: all 0.3s ease;
     padding: 8px;
-    border-radius: 50%;
+    border-radius: 12px;
     color: white;
     border: none;
     cursor: pointer;
@@ -657,7 +656,6 @@ body {
     max-width: 500px;
     width: 90%;
     max-height: 80vh;
-    overflow-y: auto;
     transform: scale(0.9);
     transition: transform 0.3s ease;
 }

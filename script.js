@@ -1809,9 +1809,9 @@ function showCalendarPlanDetailModal(dateStr) {
                         <div class="text-gray-600 font-semibold mb-2">${emptyMessage}</div>
                         ${isToday ? '<div class="text-sm text-gray-500">Klik tombol "Buat Rencana" untuk mulai merencanakan hari ini!</div>' : ''}
                     </div>
-                    <div class="flex gap-2">
-                        <button class="btn-primary flex-1" onclick="createNewCalendarPlan('${dateStr}')">📝 Buat Rencana</button>
-                        <button class="btn-primary w-full mt-4" style="display:flex;justify-content:center;align-items:center;text-align:center;" onclick="closeCalendarModal()">Tutup</button>
+                    <div class="flex gap-2 mt-4">
+                      <button class="btn-primary flex-1" onclick="createNewCalendarPlan('${dateStr}')">📝 Buat Rencana</button>
+                      <button class="btn-primary flex-1" onclick="closeCalendarModal()">Tutup</button>
                     </div>
                 </div>
             `;
