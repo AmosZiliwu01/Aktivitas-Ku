@@ -125,23 +125,6 @@ body {
     box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
 }
 
-.halaman-utama {
-    background: linear-gradient(45deg, #34d399, #3b82f6);
-    box-shadow: 0 4px 15px rgba(52, 211, 153, 0.4);
-    transition: all 0.3s ease;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.halaman-utama:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(52, 211, 153, 0.6);
-}
-
 .delete-btn {
     background: linear-gradient(45deg, #ff4757, #ff6b7a);
     transition: all 0.3s ease;
@@ -421,17 +404,6 @@ body {
     font-weight: 500;
 }
 
-.achievement-badge {
-    background: linear-gradient(45deg, #28a745, #20c997);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    margin: 4px 0;
-    display: inline-block;
-}
-
 .duration-badge {
     background: linear-gradient(45deg, #667eea, #764ba2);
     color: white;
@@ -498,10 +470,6 @@ body {
 }
 
 /* ===== SPECIAL COMPONENTS ===== */
-.neon-glow {
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-}
-
 .study-streak {
     background: linear-gradient(45deg, #ff6b6b, #feca57);
     color: white;
@@ -559,15 +527,6 @@ body {
 }
 
 /* ===== PROGRESS COMPONENTS ===== */
-.progress-ring {
-    transform: rotate(-90deg);
-}
-
-.progress-ring-circle {
-    stroke-dasharray: 125.6;
-    transition: stroke-dashoffset 0.5s ease;
-}
-
 .progress-bar {
     background: rgba(255, 255, 255, 0.2);
     height: 8px;
@@ -932,7 +891,6 @@ body {
         font-size: 13px !important;
     }
     .btn-primary,
-    .halaman-utama,
     .glow-button {
         padding: 10px 0 !important;
         font-size: 14px !important;
@@ -991,5 +949,4 @@ body {
         flex-direction: column !important;
         gap: 8px !important;
     }
-}
 }
