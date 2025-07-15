@@ -854,6 +854,18 @@ body {
     .glass-morphism {
         padding: 0 !important;
     }
+    .flex.justify-center.space-x-4.flex-wrap {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+    .tab-button {
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        border-radius: 12px !important;
+        text-align: center !important;
+    }
 }
 @media (min-width: 769px) {
     .mobile-header-toggle,
