@@ -1789,10 +1789,9 @@ function showCalendarPlanDetailModal(dateStr) {
                         <div class="flex gap-2 mt-2">
                             <button class="btn-primary" style="padding:4px 12px;font-size:13px;" onclick="editCalendarStudyPlan('${dateStr}')">🛠️ Edit</button>
                             <button class="delete-btn" style="padding:4px 12px;font-size:13px;" onclick="deleteCalendarStudyPlan('${dateStr}')">🗑️ Hapus</button>
-                            <button class="btn-primary" style="padding:4px 12px;font-size:13px;" onclick="continueCalendarStudy('${plan.priority}')">▶️ Lanjutkan</button>
                         </div>
                     </div>
-                    <button class="btn-primary w-full mt-4" onclick="closeCalendarModal()">Tutup</button>
+                    <button class="btn-primary w-full mt-4" style="display:flex;justify-content:center;align-items:center;text-align:center;" onclick="closeCalendarModal()">Tutup</button>
                 </div>
             `;
         } else {
@@ -1812,7 +1811,7 @@ function showCalendarPlanDetailModal(dateStr) {
                     </div>
                     <div class="flex gap-2">
                         <button class="btn-primary flex-1" onclick="createNewCalendarPlan('${dateStr}')">📝 Buat Rencana</button>
-                        <button class="btn-primary flex-1" onclick="closeCalendarModal()">Tutup</button>
+                        <button class="btn-primary w-full mt-4" style="display:flex;justify-content:center;align-items:center;text-align:center;" onclick="closeCalendarModal()">Tutup</button>
                     </div>
                 </div>
             `;
@@ -1896,15 +1895,23 @@ function deleteCalendarStudyPlan(dateStr) {
             showCalendarNotification('Rencana tidak ditemukan', 'error');
             return;
         }
-        
-        if (confirm('Yakin ingin menghapus rencana belajar ini?')) {
-            delete window.calendarData.studyPlans[dateStr];
-            saveCalendarStudyPlans();
-            closeCalendarModal();
-            showCalendarNotification('Rencana berhasil dihapus!');
-            generateCalendar();
-        }
-        
+        // Ganti confirm dengan SweetAlert
+        Swal.fire({
+            title: 'Hapus rencana belajar ini?',
+            text: 'Data yang dihapus tidak dapat dikembalikan!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                delete window.calendarData.studyPlans[dateStr];
+                saveCalendarStudyPlans();
+                closeCalendarModal();
+                showCalendarNotification('Rencana berhasil dihapus!');
+                generateCalendar();
+            }
+        });
     } catch (error) {
         console.error('Error deleting plan:', error);
         showCalendarNotification('Gagal menghapus rencana', 'error');
@@ -1944,50 +1951,6 @@ function createNewCalendarPlan(dateStr) {
     } catch (error) {
         console.error('Error creating new plan:', error);
         showCalendarNotification('Gagal membuat rencana baru', 'error');
-    }
-}
-
-// Enhanced continue study function
-function continueCalendarStudy(subjectName) {
-    try {
-        console.log('Continuing study for subject:', subjectName);
-        
-        // Check if subject exists in main studyData
-        const mainStudyData = window.studyData || { subjects: [] };
-        const subjectIndex = mainStudyData.subjects.findIndex(s => s.name === subjectName);
-        
-        if (subjectIndex === -1) {
-            showCalendarNotification('Topik tidak ditemukan dalam daftar pembelajaran!', 'error');
-            return;
-        }
-        
-        // Close modal first
-        closeCalendarModal();
-        
-        // Try different methods to set active subject
-        if (typeof window.setActiveSubject === 'function') {
-            window.setActiveSubject(subjectIndex);
-            showCalendarNotification(`Fokus belajar pada: ${subjectName}`);
-        } else if (typeof window.switchToSubject === 'function') {
-            window.switchToSubject(subjectIndex);
-            showCalendarNotification(`Fokus belajar pada: ${subjectName}`);
-        } else if (window.lastContinuedSubjectName !== undefined) {
-            // Fallback to old method
-            window.lastContinuedSubjectName = subjectName;
-            window.lastContinuedSubjectIndex = subjectIndex;
-            
-            if (typeof updateActiveSubjectName === 'function') {
-                updateActiveSubjectName();
-            }
-            
-            showCalendarNotification(`Fokus belajar pada: ${subjectName}`);
-        } else {
-            showCalendarNotification('Sistem timer tidak ditemukan. Silakan mulai dari halaman utama.', 'warning');
-        }
-        
-    } catch (error) {
-        console.error('Error continuing study:', error);
-        showCalendarNotification('Gagal melanjutkan pembelajaran', 'error');
     }
 }
 
