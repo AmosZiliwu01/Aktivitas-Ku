@@ -1476,12 +1476,20 @@ function showCalendarNotification(message, type = 'success') {
                 dayDiv.style.background = 'linear-gradient(45deg, #ffc107, #fd7e14)';
                 dayDiv.style.color = 'white';
                 dayDiv.style.fontWeight = 'bold';
-                // Potong label topik jika terlalu panjang
                 let displayPriority = plan.priority || '';
-                if (displayPriority.length > 35) {
-                    displayPriority = displayPriority.substring(0, 35) + '…';
+                let isMobile = false;
+                if (typeof window !== 'undefined' && window.innerWidth <= 480) {
+                    isMobile = true;
                 }
-                // Show topic label if it exists and is valid
+                if (isMobile) {
+                    // Ambil huruf awal setiap kata, maksimal 4 kata
+                    let initials = displayPriority.split(/\s+/).slice(0,4).map(k => k[0] ? k[0].toUpperCase() : '').join('');
+                    displayPriority = initials;
+                } else {
+                    if (displayPriority.length > 35) {
+                        displayPriority = displayPriority.substring(0, 35) + '…';
+                    }
+                }
                 if (plan.priority && plan.priority.trim() !== '' && plan.priority !== 'undefined') {
                     topicLabel = `<div class='text-xs mb-1 font-semibold' style='color:#fff;text-shadow:0 1px 2px #fd7e14;' title='${plan.priority}'>${displayPriority}</div>`;
                 }
