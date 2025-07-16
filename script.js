@@ -1463,10 +1463,10 @@ function showCalendarNotification(message, type = 'success') {
             }
             
         // Add days of the month
-            const today = new Date();
-            for (let day = 1; day <= daysInMonth; day++) {
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${window.calendarData.currentYear}-${String(window.calendarData.currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                const dayDiv = document.createElement('div');
+            const dayDiv = document.createElement('div');
             dayDiv.className = 'calendar-day text-center py-3 rounded-lg transition-colors cursor-pointer hover:bg-gray-100';
             
             // Check if there's a study plan for this date
@@ -1476,10 +1476,14 @@ function showCalendarNotification(message, type = 'success') {
                 dayDiv.style.background = 'linear-gradient(45deg, #ffc107, #fd7e14)';
                 dayDiv.style.color = 'white';
                 dayDiv.style.fontWeight = 'bold';
-                
+                // Potong label topik jika terlalu panjang
+                let displayPriority = plan.priority || '';
+                if (displayPriority.length > 35) {
+                    displayPriority = displayPriority.substring(0, 35) + '…';
+                }
                 // Show topic label if it exists and is valid
                 if (plan.priority && plan.priority.trim() !== '' && plan.priority !== 'undefined') {
-                    topicLabel = `<div class='text-xs mb-1 font-semibold' style='color:#fff;text-shadow:0 1px 2px #fd7e14;'>${plan.priority}</div>`;
+                    topicLabel = `<div class='text-xs mb-1 font-semibold' style='color:#fff;text-shadow:0 1px 2px #fd7e14;' title='${plan.priority}'>${displayPriority}</div>`;
                 }
             }
             
@@ -1497,7 +1501,7 @@ function showCalendarNotification(message, type = 'success') {
             }
             
             dayDiv.innerHTML = `${topicLabel}<div>${day}</div>`;
-                calendarGrid.appendChild(dayDiv);
+            calendarGrid.appendChild(dayDiv);
         }
         
         // Update nearest plans list
@@ -1566,7 +1570,13 @@ function updatePlannerSubjectOptions() {
             if (subject && subject.name) {
                 const opt = document.createElement('option');
                 opt.value = subject.name;
-                opt.textContent = subject.name;
+                // Batasi panjang tampilan nama topik (35 karakter)
+                let displayName = subject.name;
+                if (displayName.length > 35) {
+                    displayName = displayName.substring(0, 35) + '…';
+                }
+                opt.textContent = displayName;
+                opt.title = subject.name; // Tooltip nama lengkap
                 select.appendChild(opt);
             }
         });
@@ -1996,6 +2006,11 @@ function renderNearestPlans() {
             const learningStyleDisplay = plan.learningStyle ? 
                 plan.learningStyle.charAt(0).toUpperCase() + plan.learningStyle.slice(1) : 
                 'N/A';
+            // Batasi panjang nama topik (plan.priority)
+            let displayPriority = plan.priority || '';
+            if (displayPriority.length > 35) {
+                displayPriority = displayPriority.substring(0, 35) + '…';
+            }
             
             div.innerHTML = `
                 <div class="flex items-center gap-3 mb-2">
@@ -2005,7 +2020,7 @@ function renderNearestPlans() {
                 <div class="flex items-center gap-2 mb-2">
                     <span class="text-xs bg-blue-100 text-blue-800 rounded px-2 py-1">${learningStyleDisplay}</span>
                 </div>
-                <div class="font-semibold text-gray-800 mb-1">🎯 ${plan.priority}</div>
+                <div class="font-semibold text-gray-800 mb-1" title="${plan.priority || ''}">🎯 ${displayPriority}</div>
                 <div class="text-gray-700 text-sm">${plan.description}</div>
             `;
             

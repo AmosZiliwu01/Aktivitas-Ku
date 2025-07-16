@@ -718,6 +718,23 @@ body {
     border: 2px dashed rgba(255, 255, 255, 0.3);
 }
 
+/* Batasi lebar dan overflow teks judul & deskripsi pada card Jadwal Hari Ini */
+.learning-path-item h4,
+.learning-path-item .subject-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 90%;
+  display: block;
+}
+.learning-path-item p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 90%;
+  display: block;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .glass-card {
@@ -948,5 +965,11 @@ body {
     .flex.gap-2.mt-4 {
         flex-direction: column !important;
         gap: 8px !important;
+    }
+    .learning-path-item h4,
+    .learning-path-item .subject-title,
+    .learning-path-item p {
+      max-width: 180px;
+      font-size: 13px !important;
     }
 }
