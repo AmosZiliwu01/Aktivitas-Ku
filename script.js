@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
         // Tambahkan audio bell
-        const bellAudio = new Audio('bell100%.mp3');
+        const bellAudio = new Audio('bell100.mp3');
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
