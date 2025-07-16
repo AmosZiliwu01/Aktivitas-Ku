@@ -85,7 +85,7 @@
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-8 pt-24">
         <!-- Welcome Section -->
-        <section class="mb-8">
+        <section class="mb-5">
             <div class="glass-card rounded-3xl p-8 text-center">
                 <h2 class="text-4xl font-bold text-gray-800 mb-4">
                     Selamat Datang, <span class="text-purple-600" id="userName">Di JejakBelajar</span>! 🎓
@@ -115,7 +115,7 @@
         </section>
 
         <!-- Navigation Tabs -->
-        <div class="glass-morphism rounded-3xl p-6 mb-8">
+        <div class="glass-morphism rounded-3xl p-6 mb-5">
             <div class="flex justify-center space-x-4 flex-wrap">
                 <button class="tab-button active" onclick="showTab('dashboard')">📊 Dashboard</button>
                 <button class="tab-button" onclick="showTab('study-planner')">📅 Perencana Belajar</button>
@@ -124,10 +124,10 @@
 
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
-            <div class="grid lg:grid-cols-3 gap-8">
+            <div class="grid lg:grid-cols-3">
                 <!-- Jadwal Hari Ini -->
                 <div class="lg:col-span-2">
-                    <div class="glass-card rounded-3xl p-8 mb-8">
+                    <div class="glass-card rounded-3xl p-8 mb-8 mr-4">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-2xl font-bold text-gray-800">📅 Jadwal Hari Ini</h3>
                             <div id="selectedActions" class="flex space-x-2" style="display:none">
@@ -178,16 +178,16 @@
 
         <!-- Study Planner Tab -->
         <div id="study-planner" class="tab-content">
-            <div class="grid lg:grid-cols-3 gap-8">
+            <div class="grid lg:grid-cols-3">
                 <!-- Calendar -->
                 <div class="lg:col-span-2">
-                    <div class="glass-card rounded-3xl p-8">
+                    <div class="glass-card rounded-3xl p-8 mr-4">
                         <h3 class="text-2xl font-bold text-gray-800 mb-6">📅 Kalender Belajar</h3>
                         <!-- Calendar Header -->
                         <div class="flex justify-between items-center mb-6">
-                            <button class="btn-primary" onclick="changeMonth(-1)">❮</button>
+                            <button class="btn-primary next" onclick="changeMonth(-1)">❮</button>
                             <h4 class="text-xl font-bold text-gray-800" id="calendarMonth">Juli 2025</h4>
-                            <button class="btn-primary" onclick="changeMonth(1)">❯</button>
+                            <button class="btn-primary back" onclick="changeMonth(1)">❯</button>
                         </div>
                         <!-- Calendar Grid -->
                         <div class="calendar-grid" id="calendarGrid">

@@ -895,7 +895,7 @@ body {
     .glass-morphism {
         padding: 10px !important;
         border-radius: 12px !important;
-        margin: 10px 2px;
+        margin: 10px -4px !important;
     }
     .modal-content {
         padding: 16px !important;
@@ -918,6 +918,11 @@ body {
         margin-bottom: 4px;
         justify-content: center !important;
     }
+
+    .next, .back{
+        width: 10% !important;
+    }
+
     .flex.gap-2 > .btn-primary {
         min-width: 0 !important;
         width: 100% !important;
