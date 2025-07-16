@@ -525,6 +525,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Tambahkan audio bell
         const bellAudio = new Audio('bell100.mp3');
 
+        document.addEventListener('click', function () {
+        bellAudio.play()
+            .then(() => {
+            bellAudio.pause();
+            bellAudio.currentTime = 0;
+            console.log('Audio diaktifkan setelah klik.');
+            })
+            .catch(err => {
+            console.warn('Autoplay ditolak:', err);
+            });
+        }, { once: true });
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
