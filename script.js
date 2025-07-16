@@ -525,17 +525,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Tambahkan audio bell
         const bellAudio = new Audio('bell100.mp3');
 
-        document.addEventListener('click', function () {
-        bellAudio.play()
-            .then(() => {
+        // Harus dikaitkan dengan interaksi pengguna
+        document.addEventListener('click', () => {
+        bellAudio.play().then(() => {
             bellAudio.pause();
             bellAudio.currentTime = 0;
-            console.log('Audio diaktifkan setelah klik.');
-            })
-            .catch(err => {
-            console.warn('Autoplay ditolak:', err);
-            });
+            console.log("Audio diaktifkan di GitHub Pages setelah klik.");
+        }).catch((err) => {
+            console.warn("Gagal aktifkan audio:", err);
+        });
         }, { once: true });
+
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
