@@ -962,66 +962,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // Enhanced resetTimer function with milestone-based progress reset
         function resetTimer() {
             robustTimer.reset();
-            
             const defaultDuration = 25;
             document.getElementById('timerDisplay').textContent = `${defaultDuration.toString().padStart(2, '0')}:00`;
             document.getElementById('timerBtn').style.display = 'block';
             document.getElementById('timerSelect').disabled = false;
-            
-    // Reset subject progress with milestone rounding - BUT NOT if already 100%
+
             if (typeof window.lastContinuedSubjectIndex === 'number' && studyData.subjects[window.lastContinuedSubjectIndex]) {
                 const subject = studyData.subjects[window.lastContinuedSubjectIndex];
-        
-        // Don't reset if subject is already completed (100%)
-        if (subject.completed && subject.progress >= 100) {
-            showNotification('🏆 Subjek ini sudah selesai 100%! Tidak bisa direset dari timer. Gunakan reset di jadwal jika perlu.');
-            window.lastContinuedSubjectName = null;
-            window.lastContinuedSubjectIndex = null;
-            updateActiveSubjectName();
-            return;
-        }
-        
-                let targetTime = parseFloat(subject.targetTime);
-                if (!targetTime || isNaN(targetTime)) targetTime = 25;
-                
-        // Calculate total time including running timer
-                let totalTime = (parseFloat(subject.totalTime) || 0) + (parseFloat(subject.runningTimerElapsed) || 0);
-                let progressRaw = (totalTime / targetTime) * 100;
-                
-        // Round down to nearest 25% milestone
-        let milestone = 0;
-                if (progressRaw >= 75) milestone = 75;
-                else if (progressRaw >= 50) milestone = 50;
-                else if (progressRaw >= 25) milestone = 25;
-        else milestone = 0;
-                
-        // Update subject data based on milestone
-                if (milestone === 0) {
-                    subject.totalTime = 0;
-                    subject.runningTimerElapsed = 0;
-                    subject.progress = 0;
-                    subject.completed = false;
-            showNotification('Progress direset ke 0%. Semangat untuk memulai lagi! 💪');
-                } else {
-                    subject.totalTime = (milestone / 100) * targetTime;
-                    subject.runningTimerElapsed = 0;
-                    subject.progress = milestone;
-                    subject.completed = (milestone === 100);
-            showNotification(`Progress direset ke ${milestone}%. Lanjutkan belajar dengan semangat! 🎯`);
-        }
-        
-        // Reset milestone notifications for future sessions
-        subject._milestoneNotified = {};
-        
-        // Update DOM immediately
-        updateDOMProgress(subject.name, milestone);
+                // Jika progress sudah 100%, reset di timer tidak boleh dilakukan
+                if (subject.completed && subject.progress >= 100) {
+                    showNotification('🏆 Topik sudah selesai 100%. Reset hanya bisa dari jadwal harian!');
+                    return;
+                }
+                subject.runningTimerElapsed = 0;
+                saveUserData();
             }
-            
-            // Reset labels
+
             window.lastContinuedSubjectName = null;
             window.lastContinuedSubjectIndex = null;
             updateActiveSubjectName();
-            saveUserData();
             updateDashboard();
         }
         
