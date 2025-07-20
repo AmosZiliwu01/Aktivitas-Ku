@@ -52,7 +52,7 @@ Aplikasi web interaktif untuk mencatat dan melacak aktivitas belajar harian deng
 ### Cara 1: Live Server (Direkomendasikan)
 ```bash
 git clone https://github.com/AmosZiliwu01/JejakBelajar.git
-cd JejakBelajar/Aktivitas-Ku
+cd JejakBelajar
 # Jalankan dengan Live Server di VS Code atau editor lainnya
 ```
 
